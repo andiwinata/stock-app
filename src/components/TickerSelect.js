@@ -10,7 +10,7 @@ function logChange(val) {
     console.log("Selected: " + val);
 }
 
-var options = require('../data/ticker_list.json');
+var options = require('../data/ticker_abbrvlong_long_list.json');
 var filterOptions = createFilterOptions({ options });
 
 class TickerSelect extends PureComponent {
