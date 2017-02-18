@@ -31,7 +31,7 @@ def process_wiki_quandl_metadata():
             if "Untitled" in row:
                 return ""
             else:
-                return row.rsplit('(', 1)[0]
+                return row.rsplit('(', 1)[0].rstrip()
 
         source['Description'] = source['Description'].map(filter_only_ticker_fullname)
         
