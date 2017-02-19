@@ -1,16 +1,45 @@
 import React, { PureComponent } from 'react';
 
+import { connect } from 'react-redux';
+
+import TickerSelect from './TickerSelect';
+
+import { addSelectedTicker } from '../actionCreators';
+
 import CSSModules from 'react-css-modules';
 import styles from './App.css';
 
-class App extends PureComponent {
+export class App extends PureComponent {
     render() {
         return (
             <div styleName="full-width">
                 Hello World! NONONO
+                <TickerSelect 
+                    onTickerSelectChange={this.props.onTickerSelectChange}
+                    selectedTickers={this.props.selectedTickers}
+                />
             </div>
         );
     }
 }
 
-export default CSSModules(App, styles);
+function mapStateToProps(state) {
+    return {
+        selectedTickers: state.selectedTickers
+    }
+}
+
+function mapDispatchToProps(dispatch) {
+    return {
+        onTickerSelectChange: (value) => {
+            dispatch(addSelectedTicker(value));
+        }
+    }
+}
+
+const AppCSS = CSSModules(App, styles);
+
+export const AppContainer = connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(AppCSS);

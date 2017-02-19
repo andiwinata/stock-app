@@ -9,12 +9,15 @@ module.exports = {
     module: {
         rules: [
             {
+                // transpile js or jsx
                 test: /\.(js|jsx)$/,
                 use: 'babel-loader',
                 exclude: /node_modules/
             },
-            {
-                test: /\.css/,
+            { 
+                // css modules for non node_modules
+                test: /\.css$/,
+                exclude: /node_modules/,
                 use: [
                     {
                         loader: 'style-loader',
@@ -31,6 +34,12 @@ module.exports = {
                         }
                     }
                 ]
+            },
+            {
+                // just include css without hash for node_modules
+                test: /\.css$/,
+                include: /node_modules/,
+                use: ['style-loader', 'css-loader']
             }
         ]
     },
