@@ -6,23 +6,30 @@ import 'react-virtualized/styles.css'
 import 'react-virtualized-select/styles.css'
 import createFilterOptions from 'react-select-fast-filter-options';
 
-function logChange(val) {
-    console.log("Selected: " + val);
-}
-
-var options = require('../data/ticker_abbrvlong_long_list.json');
+var options = require('../data/ticker_abbrvlong_abbrv_list.json');
 var filterOptions = createFilterOptions({ options });
 
 class TickerSelect extends PureComponent {
+    constructor(props) {
+        super(props);
+        this.logChange = this.logChange.bind(this);
+    }
+
+    logChange(val) {
+        console.log(this.props, "value", val);
+        this.props.onTickerSelectChange(val[0].value);
+    }
+
     render() {
         return (
             <div>
                 <VirtualizedSelect
                     name="form-field-name"
-                    value="one"
+                    value={this.props.selectedTickers}
+                    multi={true}
                     filterOptions={filterOptions}
                     options={options}
-                    onChange={logChange}
+                    onChange={this.logChange}
                 />
             </div>
         );

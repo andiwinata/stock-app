@@ -52,6 +52,7 @@ def process_wiki_quandl_metadata():
         ticker_abbrv_long_json_path = "./ticker_abbrv_long_list.json"
         ticker_abbrv_abbrv_json_path = "./ticker_abbrv_abbrv_list.json"
         ticker_abbrvlong_long_json_path = "./ticker_abbrvlong_long_list.json"
+        ticker_abbrvlong_abbrv_json_path = "./ticker_abbrvlong_abbrv_list.json"
 
         # rename header to be useful for app
         source2 = source.rename(columns={'Ticker': 'label', 'Description': 'value'})
@@ -68,6 +69,12 @@ def process_wiki_quandl_metadata():
         source4 = source2.copy()
         source4['label'] = source4['label'] + " - " + source4['value']
         source4.to_json(ticker_abbrvlong_long_json_path, orient='records')
+
+        # do combined abbrev and fullname as label and abbrev as value
+        source5 = source2.copy()
+        source5['label'] = source5['label'] + " - " + source5['value']
+        source5['value'] = source2['label']
+        source5.to_json(ticker_abbrvlong_abbrv_json_path, orient='records')
         
     # execute the nested functions
     output_json(read_and_process_csv())
