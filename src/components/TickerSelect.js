@@ -16,8 +16,7 @@ class TickerSelect extends PureComponent {
     }
 
     logChange(val) {
-        console.log(this.props, "value", val);
-        this.props.onTickerSelectChange(val[0].value);
+        this.props.onTickerSelectChange(val);
     }
 
     render() {

@@ -1,4 +1,5 @@
 import { AppContainer } from './components/App';
+import initialState from './initialState';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -9,7 +10,7 @@ import { Provider } from 'react-redux';
 
 import reducer from './reducer';
 
-const store = createStore(reducer);
+const store = createStore(reducer, initialState);
 
 ReactDOM.render(
     <Provider store={store}>

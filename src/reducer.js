@@ -1,17 +1,9 @@
 import { combineReducers } from 'redux';
 
-const initialState = {
-    selectedTickers: [],
-    shownTickers: []
-}
-
-function selectedTickers(state = initialState, action) {
+function selectedTickers(state = [], action) {
     switch (action.type) {
         case 'ADD_TICKER':
-            console.log(action);
-            console.log('reducer', action, 'state', state, 'newticker', action.newSelectedTicker);
-            const newState = [...state.selectedTickers, action.newSelectedTicker];
-            console.log('newstate', newState);
+            const newState = action.newSelectedTicker;
             return newState;
         default:
             return state;
