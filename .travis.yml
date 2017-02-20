@@ -1,0 +1,9 @@
+language: node_js
+node_js:
+    - "6"
+script:
+    - echo "Running test..."
+    - npm test
+deploy:
+    - echo "Deploying to github page..."
+    - git branch -a
