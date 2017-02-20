@@ -13,7 +13,7 @@ export class App extends PureComponent {
     render() {
         return (
             <div styleName="full-width">
-                Hello World! NONONO
+                <h1>Selected Tickers:</h1>
                 <TickerSelect 
                     onTickerSelectChange={this.props.onTickerSelectChange}
                     selectedTickers={this.props.selectedTickers}
