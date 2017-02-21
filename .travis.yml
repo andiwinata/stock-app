@@ -9,5 +9,5 @@ script:
     - bash ./githubPageDeploy.sh
 env:
     global:
-        - ENCRYPTION_LABEL: 32bdae572ae2
+        - ENCRYPTION_LABEL: 5f39565ca2eb
         - COMMIT_AUTHOR_EMAIL: andi.winata@hotmail.com
