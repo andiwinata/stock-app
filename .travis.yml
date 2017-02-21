@@ -4,3 +4,4 @@ node_js:
 script:
     - echo "Running test..."
     - npm run test
+    - git branch -a
