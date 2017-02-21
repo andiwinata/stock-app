@@ -3,7 +3,7 @@ node_js:
     - "6"
 script:
     - echo "Running test..."
-    - npm test
+    - npm run test
 deploy:
     - echo "Deploying to github page..."
     - git branch -a
