@@ -5,3 +5,9 @@ script:
     - echo "Running test..."
     - npm run test
     - git branch -a
+    # deploy to gihub pages
+    - bash ./githubPageDeploy.sh
+env:
+    global:
+        - ENCRYPTION_LABEL: 32bdae572ae2
+        - COMMIT_AUTHOR_EMAIL: andi.winata@hotmail.com
