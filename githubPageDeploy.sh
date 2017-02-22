@@ -7,7 +7,6 @@ SOURCE_BRANCH="master"
 TARGET_BRANCH="gh-pages"
 
 function doCompile {
-    echo "Compiling project (bundling production)"
     webpack -p
 }
 
@@ -31,11 +30,20 @@ cd out
 git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
 cd ..
 
+echo ls -al
+echo
+
 # Clean out existing contents
 rm -rf out/**/* || exit 0
 
+echo ls -al
+echo
+
 # Run our compile script
+echo "Compiling..."
+echo "------------"
 doCompile
+echo
 
 # Now let's go have some fun with the cloned repo
 cd out
@@ -52,13 +60,14 @@ fi
 # The delta will show diffs between new and old versions.
 git add --all
 git status
-git commit -m "Deploy to GitHub Pages: ${SHA}"
+git commit -m "[Travis CI] Deploy GitHubPage: ${SHA}"
 
 # Get the deploy key by using Travis's stored variables to decrypt deploy_key.enc
 ENCRYPTED_KEY_VAR="encrypted_${ENCRYPTION_LABEL}_key"
 ENCRYPTED_IV_VAR="encrypted_${ENCRYPTION_LABEL}_iv"
 ENCRYPTED_KEY=${!ENCRYPTED_KEY_VAR}
 ENCRYPTED_IV=${!ENCRYPTED_IV_VAR}
+
 openssl aes-256-cbc -K $ENCRYPTED_KEY -iv $ENCRYPTED_IV -in ../deploy_key.enc -out deploy_key -d
 chmod 600 deploy_key
 cp deploy_key ~/.ssh/id_rsa
