@@ -24,6 +24,8 @@ echo "Overwriting $TARGET_BRANCH with $SOURCE_BRANCH......"
 echo
 # from http://superuser.com/questions/716818/git-overwrite-branch-with-master?newreg=91a88353defa444c84b70c758b119363
 
+# fetching
+git fetch
 # checkout $SOURCE_BRANCH
 git checkout $SOURCE_BRANCH
 # update $SOURCE_BRANCH branch
