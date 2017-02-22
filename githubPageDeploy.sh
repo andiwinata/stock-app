@@ -20,10 +20,6 @@ SHA=`git rev-parse --verify HEAD`
 echo "Repository: $SSH_REPO , last SHA: $SHA"
 echo
 
-# set git credentials
-git config user.name "Travis CI"
-git config user.email "$COMMIT_AUTHOR_EMAIL"
-
 echo "Cloning repo..."
 echo
 
@@ -31,6 +27,7 @@ echo
 git clone $REPO ./out
 cd out
 
+echo
 echo "Overwriting $TARGET_BRANCH with $SOURCE_BRANCH..."
 echo
 # from http://superuser.com/questions/716818/git-overwrite-branch-with-master?newreg=91a88353defa444c84b70c758b119363
@@ -41,6 +38,9 @@ git checkout $SOURCE_BRANCH
 git pull
 # get $TARGET_BRANCH
 git checkout $TARGET_BRANCH || git checkout -b $TARGET_BRANCH
+# set git credentials
+git config --global user.email "$COMMIT_AUTHOR_EMAIL"
+git config --global user.name "Travis CI"
 # merge using ours to $SOURCE_BRANCH (so it will be using $SOURCE_BRANCH)
 git checkout $SOURCE_BRANCH
 git merge -s ours $TARGET_BRANCH --no-edit
