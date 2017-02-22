@@ -27,7 +27,7 @@ echo
 # checkout $SOURCE_BRANCH
 git checkout $SOURCE_BRANCH
 # fetching
-git fetch
+git fetch --all
 git branch -a
 # update $SOURCE_BRANCH branch
 git pull
