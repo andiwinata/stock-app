@@ -6,14 +6,10 @@ set -e # Exit with nonzero exit code if anything fails
 SOURCE_BRANCH="master"
 TARGET_BRANCH="gh-pages"
 
-function doCompile {
-    webpack -p
-}
-
-# Pull requests and commits to other branches shouldn't try to deploy, just build to verify
+# if pull requests or commits to other branches except $SOURCE_BRANCH
+# dont deploy
 if [ "$TRAVIS_PULL_REQUEST" != "false" -o "$TRAVIS_BRANCH" != "$SOURCE_BRANCH" ]; then
-    echo "Skipping deploy; just doing a build."
-    doCompile
+    echo "Skipping deploy. Not in $SOURCE_BRANCH or it is a pull request"
     exit 0
 fi
 
@@ -23,58 +19,60 @@ SSH_REPO=${REPO/https:\/\/github.com\//git@github.com:}
 SHA=`git rev-parse --verify HEAD`
 echo "Repository: $SSH_REPO , last SHA: $SHA"
 
-# Clone the existing gh-pages for this repo into out/
-# Create a new empty branch if gh-pages doesn't exist yet (should only happen on first deply)
-echo "Cloning repo..."
-echo "------------"
-
-git clone $REPO out
-cd out
-git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
-cd ..
-
 echo
-echo "List directory of out"
-cd out
-ls -al
+echo "Overwriting $TARGET_BRANCH with $SOURCE_BRANCH......"
 echo
-cd ..
+# from http://superuser.com/questions/716818/git-overwrite-branch-with-master?newreg=91a88353defa444c84b70c758b119363
 
-# Clean out existing contents
-echo "Cleaning content"
-echo "------------"
-rm -rf out/**/* || exit 0
-
+# changing remote to linsten to all branches
+echo "Listing remote:"
 echo
-echo "List directory of out"
-cd out
-ls -al
+git config --get remote.origin.fetch
+
+echo "Updating remote:"
 echo
-cd ..
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git config --get remote.origin.fetch
 
-# Run our compile script
-echo "Compiling..."
-echo "------------"
+# fetching
+git fetch --all
+git branch -a
 
-doCompile
-echo
+# checkout $SOURCE_BRANCH
+git checkout $SOURCE_BRANCH
+# update $SOURCE_BRANCH branch
+git pull
+# get $TARGET_BRANCH
+git checkout $TARGET_BRANCH || git checkout -b $TARGET_BRANCH
+# set git credentials
+git config --global user.email "$COMMIT_AUTHOR_EMAIL"
+git config --global user.name "Travis CI"
+# merge using ours to $SOURCE_BRANCH (so it will be using $SOURCE_BRANCH)
+git checkout $SOURCE_BRANCH
+git merge -s ours $TARGET_BRANCH --no-edit
+# reset $TARGET_BRANCH to make it same as $SOURCE_BRANCH
+git checkout $TARGET_BRANCH
+git merge $SOURCE_BRANCH --no-commit --no-ff
+echo 
+echo "Showing git status......"
+git status
 
-# Now let's go have some fun with the cloned repo
-cd out
-git config user.name "Travis CI"
-git config user.email "$COMMIT_AUTHOR_EMAIL"
-
-# If there are no changes to the compiled out (e.g. this is a README update) then just bail.
+# If there are no changes to origin/$TARGET_BRANCH, then exit
 if ! [[ `git status --porcelain` ]]; then
     echo "No changes to the output on this push; exiting."
     exit 0
 fi
 
-# Commit the "changes", i.e. the new version.
+# Building or packaging
+echo "Packaging......"
+echo
+webpack -p
+
+# Commit the "packaging"
 # The delta will show diffs between new and old versions.
 git add --all
 git status
-git commit -m "[Travis CI] Deploy GitHubPage: ${SHA}"
+git commit -m "[Travis CI] Deploy GitHubPage from: ${SHA}"
 
 # Get the deploy key by using Travis's stored variables to decrypt deploy_key.enc
 ENCRYPTED_KEY_VAR="encrypted_${ENCRYPTION_LABEL}_key"
@@ -82,7 +80,7 @@ ENCRYPTED_IV_VAR="encrypted_${ENCRYPTION_LABEL}_iv"
 ENCRYPTED_KEY=${!ENCRYPTED_KEY_VAR}
 ENCRYPTED_IV=${!ENCRYPTED_IV_VAR}
 
-openssl aes-256-cbc -K $ENCRYPTED_KEY -iv $ENCRYPTED_IV -in ../deploy_key.enc -out deploy_key -d
+openssl aes-256-cbc -K $ENCRYPTED_KEY -iv $ENCRYPTED_IV -in deploy_key.enc -out deploy_key -d
 chmod 600 deploy_key
 cp deploy_key ~/.ssh/id_rsa
 
