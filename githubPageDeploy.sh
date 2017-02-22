@@ -71,6 +71,8 @@ if ! [[ `git status --porcelain` ]]; then
 fi
 
 # Commit the overwrite and packaging
+echo
+echo "Adding files to be commited......"
 git add --all
 git status
 git commit -m "[Travis CI] Deploy GitHubPage from: ${SHA}"
