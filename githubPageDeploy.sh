@@ -33,16 +33,24 @@ cd out
 git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
 cd ..
 
+echo
+echo "List directory of out"
+cd out
 ls -al
 echo
+cd ..
 
 # Clean out existing contents
 echo "Cleaning content"
 echo "------------"
 rm -rf out/**/* || exit 0
 
+echo
+echo "List directory of out"
+cd out
 ls -al
 echo
+cd ..
 
 # Run our compile script
 echo "Compiling..."
