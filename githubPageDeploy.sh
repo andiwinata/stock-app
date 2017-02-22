@@ -20,7 +20,7 @@ SHA=`git rev-parse --verify HEAD`
 echo "Repository: $SSH_REPO , last SHA: $SHA"
 echo
 
-echo "Cloning repo..."
+echo "Cloning repo......"
 echo
 
 # Clone another repository to ./out
@@ -28,7 +28,7 @@ git clone $REPO ./out
 cd out
 
 echo
-echo "Overwriting $TARGET_BRANCH with $SOURCE_BRANCH..."
+echo "Overwriting $TARGET_BRANCH with $SOURCE_BRANCH......"
 echo
 # from http://superuser.com/questions/716818/git-overwrite-branch-with-master?newreg=91a88353defa444c84b70c758b119363
 
@@ -46,7 +46,9 @@ git checkout $SOURCE_BRANCH
 git merge -s ours $TARGET_BRANCH --no-edit
 # reset $TARGET_BRANCH to make it same as $SOURCE_BRANCH
 git checkout $TARGET_BRANCH
-git merge $SOURCE_BRANCH
+git merge $SOURCE_BRANCH --no-commit --no-ff
+echo 
+echo "Showing git status......"
 git status
 
 # If there are no changes to origin/$TARGET_BRANCH, then exit
@@ -56,7 +58,7 @@ if ! [[ `git status --porcelain` ]]; then
 fi
 
 # Building or packaging
-echo "Packaging..."
+echo "Packaging......"
 echo
 webpack -p
 
