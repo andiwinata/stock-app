@@ -25,23 +25,29 @@ echo "Repository: $SSH_REPO , last SHA: $SHA"
 
 # Clone the existing gh-pages for this repo into out/
 # Create a new empty branch if gh-pages doesn't exist yet (should only happen on first deply)
+echo "Cloning repo..."
+echo "------------"
+
 git clone $REPO out
 cd out
 git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
 cd ..
 
-echo ls -al
+ls -al
 echo
 
 # Clean out existing contents
+echo "Cleaning content"
+echo "------------"
 rm -rf out/**/* || exit 0
 
-echo ls -al
+ls -al
 echo
 
 # Run our compile script
 echo "Compiling..."
 echo "------------"
+
 doCompile
 echo
 
