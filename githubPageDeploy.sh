@@ -24,11 +24,22 @@ echo "Overwriting $TARGET_BRANCH with $SOURCE_BRANCH......"
 echo
 # from http://superuser.com/questions/716818/git-overwrite-branch-with-master?newreg=91a88353defa444c84b70c758b119363
 
-# checkout $SOURCE_BRANCH
-git checkout $SOURCE_BRANCH
+# changing remote to linsten to all branches
+echo "Listing remote:"
+echo
+git config --get remote.origin.fetch
+
+echo "Updating remote:"
+echo
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git config --get remote.origin.fetch
+
 # fetching
 git fetch --all
 git branch -a
+
+# checkout $SOURCE_BRANCH
+git checkout $SOURCE_BRANCH
 # update $SOURCE_BRANCH branch
 git pull
 # get $TARGET_BRANCH
