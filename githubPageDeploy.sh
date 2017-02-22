@@ -20,6 +20,10 @@ SHA=`git rev-parse --verify HEAD`
 echo "Repository: $SSH_REPO , last SHA: $SHA"
 echo
 
+# set git credentials
+git config user.name "Travis CI"
+git config user.email "$COMMIT_AUTHOR_EMAIL"
+
 echo "Cloning repo..."
 echo
 
@@ -55,10 +59,6 @@ fi
 echo "Packaging..."
 echo
 webpack -p
-
-# set git credentials
-git config user.name "Travis CI"
-git config user.email "$COMMIT_AUTHOR_EMAIL"
 
 # Commit the "packaging"
 # The delta will show diffs between new and old versions.
