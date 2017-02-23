@@ -12,11 +12,6 @@ var filterOptions = createFilterOptions({ options });
 class TickerSelect extends PureComponent {
     constructor(props) {
         super(props);
-        this.logChange = this.logChange.bind(this);
-    }
-
-    logChange(val) {
-        this.props.onTickerSelectChange(val);
     }
 
     render() {
@@ -28,7 +23,7 @@ class TickerSelect extends PureComponent {
                     multi={true}
                     filterOptions={filterOptions}
                     options={options}
-                    onChange={this.logChange}
+                    onChange={this.props.onTickerSelectChange}
                 />
             </div>
         );

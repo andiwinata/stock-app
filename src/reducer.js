@@ -1,8 +1,10 @@
 import { combineReducers } from 'redux';
+import * as actionTypes from './actionTypes';
 
 function selectedTickers(state = [], action) {
     switch (action.type) {
-        case 'ADD_TICKER':
+        case actionTypes.ADD_TICKER:
+            console.log("Reducer receives addticker");
             const newState = action.newSelectedTicker;
             return newState;
         default:
@@ -12,6 +14,9 @@ function selectedTickers(state = [], action) {
 
 function shownTickers(state = [], action) {
     switch (action.type) {
+        case actionTypes.TICKER_DATA_RECEIVED:
+            console.log('reducer receives ticker data');
+            return [...state, action.tickerData];
         default:
             return state;
     }
