@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-    entry: './src/index.js',
+    entry: ['babel-polyfill', './src/index.js'],
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'bundle.js'
@@ -14,7 +14,7 @@ module.exports = {
                 use: 'babel-loader',
                 exclude: /node_modules/
             },
-            { 
+            {
                 // css modules for non node_modules
                 test: /\.css$/,
                 exclude: /node_modules/,

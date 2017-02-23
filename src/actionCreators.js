@@ -1,11 +1,15 @@
-/**
- * action types const
- */
-export const ADD_TICKER = 'ADD_TICKER';
+import * as actionTypes from './actionTypes';
 
 export function addSelectedTicker(newSelectedTicker) {
     return {
-        type: ADD_TICKER,
+        type: actionTypes.ADD_TICKER,
         newSelectedTicker
+    }
+}
+
+export function tickerDataReceived(tickerData) {
+    return {
+        type: actionTypes.TICKER_DATA_RECEIVED,
+        tickerData
     }
 }
