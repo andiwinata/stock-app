@@ -29,7 +29,8 @@
     "react-select-fast-filter-options": "^0.2.1",
     "react-virtualized-select": "^2.3.0",
     "redux": "^3.6.0",
-    "redux-saga": "^0.14.3"
+    "redux-saga": "^0.14.3",
+    "urijs": "^1.18.7"
   },
   "babel": {
     "presets": [

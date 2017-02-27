@@ -5,7 +5,7 @@ function selectedTickers(state = [], action) {
     switch (action.type) {
         case actionTypes.ADD_TICKER:
             console.log("Reducer receives addticker");
-            const newState = action.newSelectedTicker;
+            const newState = action.newSelectedTickers;
             return newState;
         default:
             return state;
@@ -22,9 +22,17 @@ function shownTickers(state = [], action) {
     }
 }
 
+function apiKey(state = '', action) {
+    switch (action.type) {
+        default:
+            return state;
+    }
+}
+
 // using combineReducers to split reducers into smaller functions
 // will automatically returning new state object
 export default combineReducers({
     selectedTickers,
-    shownTickers
+    shownTickers,
+    apiKey
 });

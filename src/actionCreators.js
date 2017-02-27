@@ -1,9 +1,9 @@
 import * as actionTypes from './actionTypes';
 
-export function addSelectedTicker(newSelectedTicker) {
+export function addSelectedTicker(newSelectedTickers) {
     return {
         type: actionTypes.ADD_TICKER,
-        newSelectedTicker
+        newSelectedTickers
     }
 }
 

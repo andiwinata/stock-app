@@ -12,7 +12,8 @@ import reducer from './reducer';
 
 const initialState = {
     selectedTickers: [],
-    shownTickers: []
+    shownTickers: [],
+    apiKey: 'WCQgfrbePtWCWzoooSjz'
 }
 
 const sagaMiddleware = createSagaMiddleware()
