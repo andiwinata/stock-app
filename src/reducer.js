@@ -29,10 +29,15 @@ function apiKey(state = '', action) {
     }
 }
 
+function serverHost(state = '', action) {
+    return state;
+}
+
 // using combineReducers to split reducers into smaller functions
 // will automatically returning new state object
 export default combineReducers({
     selectedTickers,
     shownTickers,
-    apiKey
+    apiKey,
+    serverHost
 });

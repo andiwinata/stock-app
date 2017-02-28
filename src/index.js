@@ -10,10 +10,18 @@ import stockAppSaga from './sagas';
 
 import reducer from './reducer';
 
+const isLocal = location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1" ||
+    location.hostname.startsWith('file:///');
+
+const serverHost = isLocal ?
+    "http://localhost:3000" : "http://tobehosted.somewhere";
+
 const initialState = {
     selectedTickers: [],
     shownTickers: [],
-    apiKey: 'WCQgfrbePtWCWzoooSjz'
+    apiKey: null, // to be passed to server if not null
+    serverHost
 }
 
 const sagaMiddleware = createSagaMiddleware()

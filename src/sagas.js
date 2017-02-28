@@ -5,6 +5,7 @@ import * as actionTypes from './actionTypes';
 import URI from 'urijs';
 
 export const getApiKey = (state) => state.apiKey;
+export const getServerHost = (state) => state.serverHost;
 
 export const formatDateYYMMDD = (date) => {
     console.log(date);
@@ -12,6 +13,7 @@ export const formatDateYYMMDD = (date) => {
 }
 
 function* tickerSelected(action) {
+    const serverHost = yield select(getServerHost);
     const apiKey = yield select(getApiKey);
 
     let fromDate = new Date(2017, 2, 1);
@@ -19,7 +21,7 @@ function* tickerSelected(action) {
     let toDate = new Date();
     toDate.setDate(toDate.getDate() - 1);
 
-    let uri = new URI('https://www.quandl.com/api/v3/datatables/WIKI/PRICES.json')
+    let uri = new URI(serverHost)
         .setQuery({
             'api_key': apiKey,
             'ticker': action.newSelectedTickers.slice(-1)[0].value,
@@ -27,8 +29,10 @@ function* tickerSelected(action) {
             'date.lte': formatDateYYMMDD(toDate)
         });
 
+    console.log('server url', uri.toString());
+
     let req = () => {
-        fetch(uri, { mode: 'no-cors' })
+        fetch(uri)
             .then(response => {
                 console.log(response);
                 if (response.ok) {
