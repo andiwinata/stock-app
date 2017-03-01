@@ -8,47 +8,57 @@ export const getApiKey = (state) => state.apiKey;
 export const getServerHost = (state) => state.serverHost;
 
 export const formatDateYYMMDD = (date) => {
-    console.log(date);
-    return `${date.getFullYear()}${date.getMonth() + 1}${date.getDate()}`;
+    let yyyy = date.getFullYear();
+
+    let mm = date.getMonth() + 1;
+    mm = mm > 9 ? mm : '0' + mm;
+
+    let dd = date.getDate();
+    dd = dd > 9 ? dd : '0' + dd;
+
+    return `${yyyy}${mm}${dd}`;
 }
 
 function* tickerSelected(action) {
     const serverHost = yield select(getServerHost);
     const apiKey = yield select(getApiKey);
 
-    let fromDate = new Date(2017, 2, 1);
+    let fromDate = new Date(2017, 0, 1);
     // yesterday date
     let toDate = new Date();
     toDate.setDate(toDate.getDate() - 1);
 
     let uri = new URI(serverHost)
         .setQuery({
-            'api_key': apiKey,
             'ticker': action.newSelectedTickers.slice(-1)[0].value,
             'date.gte': formatDateYYMMDD(fromDate),
             'date.lte': formatDateYYMMDD(toDate)
         });
 
-    console.log('server url', uri.toString());
+    // only set api key if not null
+    if (apiKey) {
+        uri.setQuery('api_key', apiKey);
+    }
 
     let req = () => {
-        fetch(uri)
+        return fetch(uri)
             .then(response => {
-                console.log(response);
                 if (response.ok) {
-                    return response;
+                    return response.json();
                 }
                 throw new Error('response is not okay!');
             })
+            .then(json => {
+                return json;
+            })
             .catch(error => {
                 console.log('Error when fetching data', error);
+                return 'Error when fetching data!';
             });
     };
 
-    let response = yield call(req);
-
-    console.log(`Uri is ${uri}`);
-    yield put(actionCreators.tickerDataReceived('this is ticker tickerDataReceived'));
+    let jsonResponse = yield call(req);
+    yield put(actionCreators.tickerDataReceived(JSON.stringify(jsonResponse, null, 4)));
 }
 
 function* stockAppSaga() {
