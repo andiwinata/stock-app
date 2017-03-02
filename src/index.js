@@ -12,10 +12,10 @@ import reducer from './reducer';
 
 const isLocal = location.hostname === "localhost" ||
     location.hostname === "127.0.0.1" ||
-    location.hostname.startsWith('file:///');
+    location.protocol.startsWith('file:///');
 
 const serverHost = isLocal ?
-    "http://localhost:3000" : "http://tobehosted.somewhere";
+    "http://localhost:5000" : "https://stock-app-server.herokuapp.com/";
 
 const initialState = {
     selectedTickers: [],
