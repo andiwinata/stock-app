@@ -10,9 +10,18 @@ import stockAppSaga from './sagas';
 
 import reducer from './reducer';
 
+const isLocal = location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1" ||
+    location.protocol.startsWith('file:///');
+
+const serverHost = isLocal ?
+    "http://localhost:5000" : "https://stock-app-server.herokuapp.com/";
+
 const initialState = {
     selectedTickers: [],
-    shownTickers: []
+    shownTickers: [],
+    apiKey: null, // to be passed to server if not null
+    serverHost
 }
 
 const sagaMiddleware = createSagaMiddleware()
