@@ -3,7 +3,7 @@ import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 
 import TickerSelect from './TickerSelect';
-import ShownTickers from './SelectedTickers';
+import ShownTickers from './ShownTickers';
 
 import { addSelectedTicker } from '../actionCreators';
 
@@ -12,7 +12,6 @@ import styles from './App.css';
 
 export class App extends PureComponent {
     render() {
-        console.log('app render', this.props);
         return (
             <div styleName="full-width">
                 <h1>Select Tickers:</h1>

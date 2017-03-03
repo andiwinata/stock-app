@@ -7,7 +7,6 @@ function selectedTickers(state = [], action) {
     switch (action.type) {
         case actionTypes.ADD_TICKER:
             const newState = action.newSelectedTickers;
-            console.log("Reducer receives addticker", newState);
             return newState;
         default:
             return state;
@@ -17,10 +16,7 @@ function selectedTickers(state = [], action) {
 function shownTickers(state = {}, action) {
     switch (action.type) {
         case actionTypes.TICKER_DATA_RECEIVED:
-            console.log('reducer receives ticker data');
-            console.log(merge(state, processQuandlJson(action.tickerData)));
-            return merge(state, processQuandlJson(action.tickerData));
-        // return [...state, action.tickerData];
+            return merge({}, state, processQuandlJson(action.tickerData));
         default:
             return state;
     }
