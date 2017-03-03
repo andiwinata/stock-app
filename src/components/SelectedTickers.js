@@ -2,11 +2,13 @@ import React, { PureComponent } from 'react';
 
 class ShownTickers extends PureComponent {
     render() {
+        console.log('render shown tickers', this.props.shownTickers);
+
         return (
             <div>
-                {this.props.shownTickers.map(ticker => 
+                {Object.keys(this.props.shownTickers).map(ticker => 
                     <div key={Date.now() + Math.random()} className="shownTicker">
-                        {ticker}
+                        {JSON.stringify(this.props.shownTickers.ticker, null, 4)}
                     </div>
                 )}
             </div>

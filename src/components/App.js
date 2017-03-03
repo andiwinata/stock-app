@@ -12,6 +12,7 @@ import styles from './App.css';
 
 export class App extends PureComponent {
     render() {
+        console.log('app render', this.props);
         return (
             <div styleName="full-width">
                 <h1>Select Tickers:</h1>
@@ -35,7 +36,8 @@ function mapStateToProps(state) {
 function mapDispatchToProps(dispatch) {
     return {
         onTickerSelectChange: (value) => {
-            dispatch(addSelectedTicker(value));
+            // encapsulate in array for later to allow multiple tickers
+            dispatch(addSelectedTicker([value]));
         }
     }
 }

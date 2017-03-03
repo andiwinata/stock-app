@@ -1,22 +1,26 @@
 import { combineReducers } from 'redux';
 import * as actionTypes from './actionTypes';
+import { processQuandlJson } from './tickerDataProcessor';
+import merge from 'lodash.merge';
 
 function selectedTickers(state = [], action) {
     switch (action.type) {
         case actionTypes.ADD_TICKER:
-            console.log("Reducer receives addticker");
             const newState = action.newSelectedTickers;
+            console.log("Reducer receives addticker", newState);
             return newState;
         default:
             return state;
     }
 }
 
-function shownTickers(state = [], action) {
+function shownTickers(state = {}, action) {
     switch (action.type) {
         case actionTypes.TICKER_DATA_RECEIVED:
             console.log('reducer receives ticker data');
-            return [...state, action.tickerData];
+            console.log(merge(state, processQuandlJson(action.tickerData)));
+            return merge(state, processQuandlJson(action.tickerData));
+        // return [...state, action.tickerData];
         default:
             return state;
     }

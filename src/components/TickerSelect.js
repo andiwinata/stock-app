@@ -19,8 +19,8 @@ class TickerSelect extends PureComponent {
             <div>
                 <VirtualizedSelect
                     name="form-field-name"
-                    value={this.props.selectedTickers}
-                    multi={true}
+                    // right now just use one ticker
+                    value={this.props.selectedTickers[0]}
                     filterOptions={filterOptions}
                     options={options}
                     onChange={this.props.onTickerSelectChange}

@@ -58,7 +58,7 @@ function* tickerSelected(action) {
     };
 
     let jsonResponse = yield call(req);
-    yield put(actionCreators.tickerDataReceived(JSON.stringify(jsonResponse, null, 4)));
+    yield put(actionCreators.tickerDataReceived(jsonResponse));
 }
 
 function* stockAppSaga() {
