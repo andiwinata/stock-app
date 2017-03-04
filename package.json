@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"no test specified\""
+    "test": "mocha --require babel-core/register --require ./test/test_helper.js \"./src/**/*@(.test.js|.test.jsx)\" \"./test/**/*@(.test.js|.test.jsx)\"",
+    "test:watch": "npm run test -- --watch"
   },
   "author": "Andi Tjong",
   "license": "ISC",
@@ -15,6 +16,7 @@
     "babel-preset-react": "^6.23.0",
     "chai": "^3.5.0",
     "css-loader": "^0.26.1",
+    "jsdom": "^9.11.0",
     "mocha": "^3.2.0",
     "react-css-modules": "^4.1.0",
     "style-loader": "^0.13.1",

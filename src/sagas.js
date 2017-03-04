@@ -20,6 +20,9 @@ export const formatDateYYMMDD = (date) => {
 }
 
 function* tickerSelected(action) {
+    // check if the ticker is cached
+
+    // if not then make request to download
     const serverHost = yield select(getServerHost);
     const apiKey = yield select(getApiKey);
 
