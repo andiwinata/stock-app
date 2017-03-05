@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 
 import TickerSelect from './TickerSelect';
 import ShownTickers from './ShownTickers';
+import DateSelect from './DateSelect';
 
 import { addSelectedTicker } from '../actionCreators';
 
@@ -23,6 +24,7 @@ export class App extends PureComponent {
                 <ShownTickers 
                     shownTickers={this.props.shownTickers}
                 />
+                <DateSelect />
             </div>
         );
     }

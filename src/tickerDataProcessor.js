@@ -34,6 +34,7 @@ export function processQuandlJson(jsonData) {
             processedData[tickerName].dailyData = {};
         }
 
+        // Setting earliest and latest date:
         // if first loop, set earliest date
         if (!previousDailyTickerData) {
             processedData[tickerName].earliestDate = dateData;

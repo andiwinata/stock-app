@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --require babel-core/register --require ./test/test_helper.js \"./src/**/*@(.test.js|.test.jsx)\" \"./test/**/*@(.test.js|.test.jsx)\"",
+    "test": "mocha --require babel-core/register --require ./test/testHelper.js \"./src/**/*@(.test.js|.test.jsx)\" \"./test/**/*@(.test.js|.test.jsx)\"",
     "test:watch": "npm run test -- --watch"
   },
   "author": "Andi Tjong",
@@ -27,6 +27,7 @@
     "lodash.merge": "^4.6.0",
     "react": "^15.4.2",
     "react-addons-shallow-compare": "^15.4.2",
+    "react-datepicker": "^0.41.1",
     "react-dom": "^15.4.2",
     "react-redux": "^5.0.2",
     "react-select-fast-filter-options": "^0.2.1",
