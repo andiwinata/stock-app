@@ -1,15 +1,30 @@
 import * as actionTypes from './actionTypes';
 
-export function addSelectedTicker(newSelectedTickers) {
+export function selectedTickerChanged(selectedTickers) {
+    // convert to array if not array
+    if (selectedTickers.constructor !== Array) {
+        selectedTickers = [selectedTickers];
+    }
     return {
-        type: actionTypes.ADD_TICKER,
-        newSelectedTickers
+        type: actionTypes.SELECTED_TICKER_CHANGED,
+        selectedTickers
     }
 }
 
-export function tickerDataReceived(tickerData) {
+export function selectedDateChanged(selectedDate) {
+    // make sure date object is valid
+    if (!('startDate' in selectedDate && 'endDate' in selectedDate)) {
+        throw Error('startDate and endDate must be in the newDate object');
+    }
     return {
-        type: actionTypes.TICKER_DATA_RECEIVED,
+        type: actionTypes.SELECTED_DATE_CHANGED,
+        selectedDate
+    }
+}
+
+export function fetchTickerDataReceived(tickerData) {
+    return {
+        type: actionTypes.FETCH_TICKER_DATA_RECEIVED,
         tickerData
     }
 }

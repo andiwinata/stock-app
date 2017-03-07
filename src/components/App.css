@@ -2,3 +2,7 @@
     width: 100%;
     background: #eee;
 }
+
+body {
+    font-family: 'Source Sans Pro', 'Roboto', 'Tahoma', sans-serif;
+}
