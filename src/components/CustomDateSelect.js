@@ -4,22 +4,30 @@ import 'react-datepicker/dist/react-datepicker.css';
 import moment from 'moment';
 
 class CustomDateSelect extends PureComponent {
+    customDateChanged = (datePropertyName) => (val) => {
+        console.log('datechanged', datePropertyName, val);
+        const changedDateObj = {[datePropertyName]: val};
+        this.props.selectedDateChanged(Object.assign({}, this.props.selectedDate, changedDateObj));
+    }
+
     render() {
         return (
             <div>
                 <DatePicker
-                    selected={moment()}
+                    dateFormat="DD-MMM-YYYY"
+                    selected={this.props.selectedDate.startDate}
                     selectsStart
-                    startDate={moment(new Date(2017, 2, 1))}
-                    endDate={moment(new Date(2017, 2, 15))}
-                    onChange={(val) => console.log('datechanged', val)}
+                    startDate={this.props.selectedDate.startDate}
+                    endDate={this.props.selectedDate.endDate}
+                    onChange={this.customDateChanged('startDate')}
                 />
                 <DatePicker
-                    selected={moment()}
+                    dateFormat="DD-MMM-YYYY"
+                    selected={this.props.selectedDate.endDate}
                     selectsEnd
-                    startDate={moment(new Date(2017, 2, 1))}
-                    endDate={moment(new Date(2017, 2, 15))}
-                    onChange={(val) => console.log('datechanged', val)}
+                    startDate={this.props.selectedDate.startDate}
+                    endDate={this.props.selectedDate.endDate}
+                    onChange={this.customDateChanged('endDate')}
                 />
                 <div>
                     <button>Cancel</button>

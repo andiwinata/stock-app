@@ -10,10 +10,6 @@ var options = require('../data/ticker_abbrvlong_abbrv_list.json');
 var filterOptions = createFilterOptions({ options });
 
 class TickerSelect extends PureComponent {
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         return (
             <div>
@@ -23,7 +19,7 @@ class TickerSelect extends PureComponent {
                     value={this.props.selectedTickers[0]}
                     filterOptions={filterOptions}
                     options={options}
-                    onChange={this.props.onTickerSelectChange}
+                    onChange={this.props.selectedTickerChanged}
                 />
             </div>
         );

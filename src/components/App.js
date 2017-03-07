@@ -6,7 +6,7 @@ import TickerSelect from './TickerSelect';
 import ShownTickers from './ShownTickers';
 import DateSelect from './DateSelect';
 
-import { addSelectedTicker } from '../actionCreators';
+import * as actionCreators from '../actionCreators';
 
 import CSSModules from 'react-css-modules';
 import styles from './App.css';
@@ -16,15 +16,18 @@ export class App extends PureComponent {
         return (
             <div styleName="full-width">
                 <h1>Select Tickers:</h1>
-                <TickerSelect 
-                    onTickerSelectChange={this.props.onTickerSelectChange}
+                <TickerSelect
+                    selectedTickerChanged={this.props.selectedTickerChanged}
                     selectedTickers={this.props.selectedTickers}
                 />
                 <hr />
-                <ShownTickers 
+                <DateSelect
+                    selectedDateChanged={this.props.selectedDateChanged}
+                    selectedDate={this.props.selectedDate}
+                />
+                <ShownTickers
                     shownTickers={this.props.shownTickers}
                 />
-                <DateSelect />
             </div>
         );
     }
@@ -34,18 +37,9 @@ function mapStateToProps(state) {
     return state;
 }
 
-function mapDispatchToProps(dispatch) {
-    return {
-        onTickerSelectChange: (value) => {
-            // encapsulate in array for later to allow multiple tickers
-            dispatch(addSelectedTicker([value]));
-        }
-    }
-}
-
 const AppCSS = CSSModules(App, styles);
 
 export const AppContainer = connect(
     mapStateToProps,
-    mapDispatchToProps
+    actionCreators
 )(AppCSS);

@@ -33,7 +33,7 @@ function* tickerSelected(action) {
 
     let uri = new URI(serverHost)
         .setQuery({
-            'ticker': action.newSelectedTickers.slice(-1)[0].value,
+            'ticker': action.selectedTickers.slice(-1)[0].value,
             'date.gte': formatDateYYMMDD(fromDate),
             'date.lte': formatDateYYMMDD(toDate)
         });
@@ -61,11 +61,11 @@ function* tickerSelected(action) {
     };
 
     let jsonResponse = yield call(req);
-    yield put(actionCreators.tickerDataReceived(jsonResponse));
+    yield put(actionCreators.fetchTickerDataReceived(jsonResponse));
 }
 
 function* stockAppSaga() {
-    yield takeEvery(actionTypes.ADD_TICKER, tickerSelected);
+    yield takeEvery(actionTypes.SELECTED_TICKER_CHANGED, tickerSelected);
 }
 
 export default stockAppSaga;
