@@ -4,8 +4,8 @@ class ShownTickers extends PureComponent {
     render() {
         return (
             <div>
-                {this.props.shownTickers.map(ticker => 
-                    <div key={Date.now() + Math.random()} className="shownTicker">
+                {Object.keys(this.props.shownTickers).map(ticker => 
+                    <div key={ticker} className="shownTicker">
                         {ticker}
                     </div>
                 )}

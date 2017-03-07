@@ -20,6 +20,9 @@ export const formatDateYYMMDD = (date) => {
 }
 
 function* tickerSelected(action) {
+    // check if the ticker is cached
+
+    // if not then make request to download
     const serverHost = yield select(getServerHost);
     const apiKey = yield select(getApiKey);
 
@@ -30,7 +33,7 @@ function* tickerSelected(action) {
 
     let uri = new URI(serverHost)
         .setQuery({
-            'ticker': action.newSelectedTickers.slice(-1)[0].value,
+            'ticker': action.selectedTickers.slice(-1)[0].value,
             'date.gte': formatDateYYMMDD(fromDate),
             'date.lte': formatDateYYMMDD(toDate)
         });
@@ -58,11 +61,11 @@ function* tickerSelected(action) {
     };
 
     let jsonResponse = yield call(req);
-    yield put(actionCreators.tickerDataReceived(JSON.stringify(jsonResponse, null, 4)));
+    yield put(actionCreators.fetchTickerDataReceived(jsonResponse));
 }
 
 function* stockAppSaga() {
-    yield takeEvery(actionTypes.ADD_TICKER, tickerSelected);
+    yield takeEvery(actionTypes.SELECTED_TICKER_CHANGED, tickerSelected);
 }
 
 export default stockAppSaga;
