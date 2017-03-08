@@ -9,8 +9,8 @@ describe('Ticker Data Processor Test', () => {
         const singleProcessResult = processQuandlJson(singleTickerJsonResp);
         expect(singleProcessResult).to.deep.equal({
             FB: {
-                "earliestDate": "2015-01-02",
-                "latestDate": "2015-01-07",
+                "startDate": "2015-01-02",
+                "endDate": "2015-01-07",
                 "dailyData": {
                     "2015-01-02": [
                         78.58,
@@ -50,8 +50,8 @@ describe('Ticker Data Processor Test', () => {
         const multiProcessResult = processQuandlJson(multiTickerJsonResp);
         expect(multiProcessResult).to.deep.equal({
             FB: {
-                "earliestDate": "2015-01-02",
-                "latestDate": "2015-01-07",
+                "startDate": "2015-01-02",
+                "endDate": "2015-01-07",
                 "dailyData": {
                     "2015-01-02": [
                         78.58,
@@ -84,8 +84,8 @@ describe('Ticker Data Processor Test', () => {
                 }
             },
             MSFT: {
-                "earliestDate": "2015-01-02",
-                "latestDate": "2015-01-07",
+                "startDate": "2015-01-02",
+                "endDate": "2015-01-07",
                 "dailyData": {
                     "2015-01-02": [
                         46.66,

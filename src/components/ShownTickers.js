@@ -4,9 +4,9 @@ class ShownTickers extends PureComponent {
     render() {
         return (
             <div>
-                {Object.keys(this.props.shownTickers).map(ticker => 
-                    <div key={ticker} className="shownTicker">
-                        {ticker}
+                {this.props.shownTickers.map(ticker => 
+                    <div key={ticker.value} className="shownTicker">
+                        {ticker.label}
                     </div>
                 )}
             </div>

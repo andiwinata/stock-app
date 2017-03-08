@@ -34,20 +34,20 @@ export function processQuandlJson(jsonData) {
             processedData[tickerName].dailyData = {};
         }
 
-        // Setting earliest and latest date:
-        // if first loop, set earliest date
+        // Setting start and end date:
+        // if first loop, set start date
         if (!previousDailyTickerData) {
-            processedData[tickerName].earliestDate = dateData;
+            processedData[tickerName].startDate = dateData;
         } else if (tickerName != previousDailyTickerData.tickerName) {
             // if this ticker has different name from previous one and 
             // previous one is not null
-            // set the earliest date for current data
-            processedData[tickerName].earliestDate = dateData;
+            // set the start date for current data
+            processedData[tickerName].startDate = dateData;
             // and last date for previous data
-            processedData[previousDailyTickerData.tickerName].latestDate = previousDailyTickerData.dateData;
+            processedData[previousDailyTickerData.tickerName].endDate = previousDailyTickerData.dateData;
         } else if (index == tickerData.length - 1) {
-            // or if it is last element, set latest date
-            processedData[tickerName].latestDate = dateData;
+            // or if it is last element, set end date
+            processedData[tickerName].endDate = dateData;
         }
 
         // set price data for this date

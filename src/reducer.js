@@ -1,6 +1,5 @@
 import { combineReducers } from 'redux';
 import * as actionTypes from './actionTypes';
-import { processQuandlJson } from './tickerDataProcessor';
 import merge from 'lodash.merge';
 import { initialSelectedDate } from './initialState';
 
@@ -23,10 +22,10 @@ function selectedDate(state = initialSelectedDate, action) {
     }
 }
 
-function shownTickers(state = {}, action) {
+function shownTickers(state = [], action) {
     switch (action.type) {
-        case actionTypes.FETCH_TICKER_DATA_RECEIVED:
-            return merge({}, state, processQuandlJson(action.tickerData));
+        case actionTypes.TICKER_DATA_RECEIVED:
+            return [...action.receivedTickers];
         default:
             return state;
     }
@@ -34,8 +33,18 @@ function shownTickers(state = {}, action) {
 
 function shownDate(state = {}, action) {
     switch (action.type) {
-        case actionTypes.FETCH_TICKER_DATA_RECEIVED:
-            return {};
+        case actionTypes.TICKER_DATA_RECEIVED:
+            return Object.assign({}, action.receivedDate);
+        default:
+            return state;
+    }
+}
+
+function storedStockData(state = {}, action) {
+    switch (action.type) {
+        case actionTypes.TICKER_DATA_RECEIVED:
+            // TODO this should not just naive merge but also take care of start and end date
+            return merge({}, state, action.receivedTickerData);
         default:
             return state;
     }
@@ -59,6 +68,7 @@ export default combineReducers({
     selectedDate,
     shownTickers,
     shownDate,
+    storedStockData,
     apiKey,
     serverHost
     // to add stored ticker data
