@@ -13,18 +13,6 @@ export const getServerHost = (state) => state.serverHost;
 export const getSelectedDate = (state) => state.selectedDate;
 export const getSelectedTickers = (state) => state.selectedTickers;
 
-export const formatDateYYMMDD = (date) => {
-    let yyyy = date.getFullYear();
-
-    let mm = date.getMonth() + 1;
-    mm = mm > 9 ? mm : '0' + mm;
-
-    let dd = date.getDate();
-    dd = dd > 9 ? dd : '0' + dd;
-
-    return `${yyyy}${mm}${dd}`;
-}
-
 function* selectedInfoChanged(action) {
     // check if the ticker is cached
     const dateRange = yield select(getSelectedDate);
@@ -37,16 +25,13 @@ function* selectedInfoChanged(action) {
     const serverHost = yield select(getServerHost);
     const apiKey = yield select(getApiKey);
 
-    let fromDate = new Date(2017, 0, 1);
-    // yesterday date
-    let toDate = new Date();
-    toDate.setDate(toDate.getDate() - 1);
+    console.log('date', startDate.format("YYYYMMDD"));
 
     let uri = new URI(serverHost)
         .setQuery({
             'ticker': tickers.slice(-1)[0].value, // right now just query 1 ticker
-            'date.gte': formatDateYYMMDD(fromDate),
-            'date.lte': formatDateYYMMDD(toDate)
+            'date.gte': startDate.format("YYYYMMDD"),
+            'date.lte': endDate.format("YYYYMMDD")
         });
 
     // only set api key if not null
