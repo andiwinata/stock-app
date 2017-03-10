@@ -19,13 +19,11 @@ function* selectedInfoChanged(action) {
     const { startDate, endDate } = dateRange;
     const tickers = yield select(getSelectedTickers);
 
-    console.log('check ticker cache', startDate, endDate, tickers);
+    // console.log('check ticker cache', startDate, endDate, tickers);
 
     // if not then make request to download
     const serverHost = yield select(getServerHost);
     const apiKey = yield select(getApiKey);
-
-    console.log('date', startDate.format("YYYYMMDD"));
 
     let uri = new URI(serverHost)
         .setQuery({
@@ -51,7 +49,7 @@ function* selectedInfoChanged(action) {
                 return json;
             })
             .catch(error => {
-                console.log('Error when fetching data', error);
+                console.error('Error when fetching data', error);
                 return 'Error when fetching data!';
             });
     };

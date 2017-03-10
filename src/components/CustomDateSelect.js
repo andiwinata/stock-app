@@ -5,7 +5,6 @@ import moment from 'moment';
 
 class CustomDateSelect extends PureComponent {
     customDateChanged = (datePropertyName) => (val) => {
-        console.log('datechanged', datePropertyName, val);
         const changedDateObj = {[datePropertyName]: val};
         this.props.selectedDateChanged(Object.assign({}, this.props.selectedDate, changedDateObj));
     }

@@ -1,9 +1,11 @@
 import { combineReducers } from 'redux';
 import * as actionTypes from './actionTypes';
+import mergeWith from 'lodash.mergewith';
 import merge from 'lodash.merge';
+import moment from 'moment';
 import { initialSelectedDate } from './initialState';
 
-function selectedTickers(state = [], action) {
+export function selectedTickers(state = [], action) {
     switch (action.type) {
         case actionTypes.SELECTED_TICKER_CHANGED:
             const newState = [...action.selectedTickers];
@@ -13,7 +15,7 @@ function selectedTickers(state = [], action) {
     }
 }
 
-function selectedDate(state = initialSelectedDate, action) {
+export function selectedDate(state = initialSelectedDate, action) {
     switch (action.type) {
         case actionTypes.SELECTED_DATE_CHANGED:
             return Object.assign({}, action.selectedDate);
@@ -22,7 +24,7 @@ function selectedDate(state = initialSelectedDate, action) {
     }
 }
 
-function shownTickers(state = [], action) {
+export function shownTickers(state = [], action) {
     switch (action.type) {
         case actionTypes.TICKER_DATA_RECEIVED:
             return [...action.receivedTickers];
@@ -31,7 +33,7 @@ function shownTickers(state = [], action) {
     }
 }
 
-function shownDate(state = {}, action) {
+export function shownDate(state = {}, action) {
     switch (action.type) {
         case actionTypes.TICKER_DATA_RECEIVED:
             return Object.assign({}, action.receivedDate);
@@ -40,24 +42,43 @@ function shownDate(state = {}, action) {
     }
 }
 
-function storedStockData(state = {}, action) {
+export function storedStockMergeCustomizer(objValue, srcValue) {
+    if (!objValue || !srcValue) {
+        return merge(objValue, srcValue);
+    }
+
+    if ("startDate" in objValue && "endDate" in objValue) {
+        // if store startDate is earlier than received one
+        if (moment(objValue.startDate).isBefore(srcValue.startDate)) {
+            // replace the srcValue with objValue to retain the earliest date
+            srcValue.startDate = objValue.startDate;
+        }
+        // if source endDate is later than received one
+        if (moment(objValue.endDate).isAfter(srcValue.endDate)) {
+            // replace the srcValue with objValue to retain the latest date
+            srcValue.endDate = objValue.endDate;
+        }
+    }
+    return merge(objValue, srcValue);
+}
+
+export function storedStockData(state = {}, action) {
     switch (action.type) {
         case actionTypes.TICKER_DATA_RECEIVED:
-            // TODO this should not just naive merge but also take care of start and end date
-            return merge({}, state, action.receivedTickerData);
+            return mergeWith({}, state, action.receivedTickerData, storedStockMergeCustomizer);
         default:
             return state;
     }
 }
 
-function apiKey(state = '', action) {
+export function apiKey(state = '', action) {
     switch (action.type) {
         default:
             return state;
     }
 }
 
-function serverHost(state = '', action) {
+export function serverHost(state = '', action) {
     return state;
 }
 
