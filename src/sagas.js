@@ -4,7 +4,7 @@ import * as actionCreators from './actionCreators';
 import * as actionTypes from './actionTypes';
 
 import { processQuandlJson } from './tickerDataProcessor';
-import { isTickerCached } from './storeFunctions';
+import { determineCachedStockDataStatus } from './storeFunctions';
 
 import URI from 'urijs';
 
@@ -12,30 +12,64 @@ export const getApiKey = (state) => state.apiKey;
 export const getServerHost = (state) => state.serverHost;
 export const getSelectedDate = (state) => state.selectedDate;
 export const getSelectedTickers = (state) => state.selectedTickers;
+export const getStoredStockData = (state) => state.storedStockData;
 
-function* selectedInfoChanged(action) {
-    // check if the ticker is cached
-    const dateRange = yield select(getSelectedDate);
-    const { startDate, endDate } = dateRange;
-    const tickers = yield select(getSelectedTickers);
-
-    // console.log('check ticker cache', startDate, endDate, tickers);
-
-    // if not then make request to download
-    const serverHost = yield select(getServerHost);
-    const apiKey = yield select(getApiKey);
-
+export function constructRetrieveTickerDataUri(serverHost, tickers, startDate, endDate, apiKey = null) {
     let uri = new URI(serverHost)
         .setQuery({
             'ticker': tickers.slice(-1)[0].value, // right now just query 1 ticker
-            'date.gte': startDate.format("YYYYMMDD"),
-            'date.lte': endDate.format("YYYYMMDD")
+            'date.gte': startDate,
+            'date.lte': endDate
         });
 
     // only set api key if not null
     if (apiKey) {
         uri.setQuery('api_key', apiKey);
     }
+
+    return uri;
+}
+
+function* selectedInfoChanged(action) {
+    // check if the ticker is cached
+    const storedStockData = yield select(getStoredStockData);
+    const dateRange = yield select(getSelectedDate);
+    const { startDate, endDate } = dateRange;
+    const tickers = yield select(getSelectedTickers);
+
+    console.log('check ticker cache', startDate, endDate, tickers);
+    // TODO REQUEST LISTS:
+    // {
+    //  20160101-20160202: [MSFT, FB],
+    //  20160101-20160103: [MS]
+    //}
+    //
+    const requestsList = {};
+    const requestUris = [];
+    tickers.forEach((ticker, index) => {
+        const cacheStatus = determineCachedStockDataStatus(storedStockData, startDate, endDate, tickers);
+
+        if (cacheStatus.needToMakeRequest) {
+            // construct request Uris for every date gap
+            requestUris.concat(
+                cacheStatus.dateGaps.map((dateGap, index) => {
+                    return constructRetrieveTickerDataUri(serverHost, [ticker], dateGap.startDate, dateGap.endDate, apiKey);
+                })
+            );
+        }
+
+    });
+
+    // if not then make request to download
+    const serverHost = yield select(getServerHost);
+    const apiKey = yield select(getApiKey);
+
+    let uri = constructRetrieveTickerDataUri(serverHost,
+        tickers,
+        startDate.format("YYYYMMDD"),
+        endDate.format("YYYYMMDD"),
+        apiKey
+    );
 
     let req = () => {
         return fetch(uri)
