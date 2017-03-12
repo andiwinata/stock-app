@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { singleTickerJsonResp, multiTickerJsonResp } from '../test/jsonResponseExample';
+import { singleTickerJsonResp, multiTickerJsonResp } from '../../test/jsonResponseExample';
 
 import { processQuandlJson } from './tickerDataProcessor';
 
