@@ -3,7 +3,7 @@ import merge from 'lodash.merge';
 /**
  * This is for used by the application to determine which array index to take from store
  */
-export const storeTickerDataColNameToIndex = {
+export const TICKER_DATA_COL_NAME_TO_INDEX = {
     open: 0,
     high: 1,
     low: 2,
@@ -52,11 +52,11 @@ export function processQuandlJson(jsonData) {
 
         // set price data for this date
         let priceData = [];
-        priceData[storeTickerDataColNameToIndex['open']] = dailyTickerData[jsonColumnNameToArrayIndex['open']];
-        priceData[storeTickerDataColNameToIndex['high']] = dailyTickerData[jsonColumnNameToArrayIndex['high']];
-        priceData[storeTickerDataColNameToIndex['low']] = dailyTickerData[jsonColumnNameToArrayIndex['low']];
-        priceData[storeTickerDataColNameToIndex['close']] = dailyTickerData[jsonColumnNameToArrayIndex['close']];
-        priceData[storeTickerDataColNameToIndex['volume']] = dailyTickerData[jsonColumnNameToArrayIndex['volume']];
+        priceData[TICKER_DATA_COL_NAME_TO_INDEX['open']] = dailyTickerData[jsonColumnNameToArrayIndex['open']];
+        priceData[TICKER_DATA_COL_NAME_TO_INDEX['high']] = dailyTickerData[jsonColumnNameToArrayIndex['high']];
+        priceData[TICKER_DATA_COL_NAME_TO_INDEX['low']] = dailyTickerData[jsonColumnNameToArrayIndex['low']];
+        priceData[TICKER_DATA_COL_NAME_TO_INDEX['close']] = dailyTickerData[jsonColumnNameToArrayIndex['close']];
+        priceData[TICKER_DATA_COL_NAME_TO_INDEX['volume']] = dailyTickerData[jsonColumnNameToArrayIndex['volume']];
         processedData[tickerName].dailyData[dateData] = priceData;
 
         // set the previous ticker data

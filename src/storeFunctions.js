@@ -1,5 +1,11 @@
 import moment from 'moment';
 
+export const CACHE_AVAILABILITY = {
+    FULL: 'FULL',
+    PARTIAL: 'PARTIAL',
+    NONE: 'NONE'
+}
+
 /**
  * @typedef {Object} DateRange
  * @property {startDate} String
@@ -8,8 +14,8 @@ import moment from 'moment';
 
 /**
  * @typedef {Object} CheckTickerCachedResult
- * @property {Boolean} needToMakeRequest
- * @property {Boolean} partiallyCached
+ * @property {String} ticker
+ * @property {CACHE_AVAILABILITY} cacheAvailability
  * @property {DateRange[]} dateGaps
  */
 
@@ -21,10 +27,10 @@ import moment from 'moment';
  * @param {any} startDate
  * @param {any} endDate
  * @param {any} ticker
- * @returns {CheckTickerCachedResult} Result
+ * @returns {StockDataCacheStatus} Result
  */
 export function determineCachedStockDataStatus(storedData, startDate, endDate, ticker) {
-    if (typeof ticker !== 'string' || !(ticker instanceof String)) {
+    if (typeof ticker !== 'string' && !(ticker instanceof String)) {
         throw new Error('Ticker must be string');
     }
 
@@ -37,8 +43,8 @@ export function determineCachedStockDataStatus(storedData, startDate, endDate, t
     }
 
     const resultObj = {
-        needToMakeRequest: false,
-        partiallyCached: false,
+        ticker: ticker,
+        cacheAvailability: CACHE_AVAILABILITY.FULL,
         dateGaps: [],
     };
 
@@ -48,13 +54,14 @@ export function determineCachedStockDataStatus(storedData, startDate, endDate, t
             startDate: startDate.format('YYYYMMDD'),
             endDate: endDate.format('YYYYMMDD')
         });
-        resultObj.needToMakeRequest = true;
+        resultObj.cacheAvailability = CACHE_AVAILABILITY.NONE;
         return resultObj;
     }
 
     const storedTickerData = storedData[ticker];
-    if (!('startDate' in storedData && 'endDate' in storedData)) {
-        throw new Error('startDate and endDate must be in stored data');
+    console.log("STORED DATA", storedTickerData, storedTickerData.startDate);
+    if (!('startDate' in storedTickerData && 'endDate' in storedTickerData)) {
+        throw new Error('startDate and endDate must be in storedTickerData');
     }
 
     // start date is earlier than stored ticker data start date
@@ -66,23 +73,22 @@ export function determineCachedStockDataStatus(storedData, startDate, endDate, t
         // add gap from startDate to storedTickerData.startDate
         resultObj.dateGaps.push({
             startDate: startDate.format('YYYYMMDD'),
-            endDate: storedTickerData.startDate.substract(1, 'days').format('YYYYMMDD')
+            endDate: moment(storedTickerData.startDate).subtract(1, 'days').format('YYYYMMDD')
         });
     }
 
     if (requestEndDateLaterThanCache) {
         // add gap from storedTickerData.endDate to endDate
         resultObj.dateGaps.push({
-            startDate: storedTickerData.endDate.add(1, 'days').format('YYYYMMDD'),
+            startDate: moment(storedTickerData.endDate).add(1, 'days').format('YYYYMMDD'),
             endDate: endDate.format('YYYYMMDD')
         });
     }
 
     // if some cache data exist, but the requested one has wider DateRange
     if (requestStartDateEarlierThanCache || requestEndDateLaterThanCache) {
-        // then set partiallyCached to true, also it still need to make request
-        resultObj.needToMakeRequest = true;
-        resultObj.partiallyCached = true;
+        // then set partiallyCached to true
+        resultObj.cacheAvailability = CACHE_AVAILABILITY.PARTIAL;
     }
 
     return resultObj;
