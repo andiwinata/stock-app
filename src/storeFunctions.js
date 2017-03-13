@@ -65,9 +65,12 @@ export function determineCachedStockDataStatus(storedData, startDate, endDate, t
     }
 
     // start date is earlier than stored ticker data start date
-    const requestStartDateEarlierThanCache = startDate.isBefore(storedTickerData.startDate);
+    const requestStartDateEarlierThanCache = startDate.isBefore(storedTickerData.startDate, 'day');
     // end date is later than stored ticker data end date
-    const requestEndDateLaterThanCache = endDate.isAfter(storedTickerData.endDate);
+    const requestEndDateLaterThanCache = endDate.isAfter(storedTickerData.endDate, 'day');
+
+    console.log("REQUEST EARLIER, LATER", startDate.format('YYYYMMDD'), storedTickerData.startDate, endDate.format('YYYYMMDD'),  storedTickerData.endDate);
+    console.log(requestStartDateEarlierThanCache, requestEndDateLaterThanCache);
 
     if (requestStartDateEarlierThanCache) {
         // add gap from startDate to storedTickerData.startDate

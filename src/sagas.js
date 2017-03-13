@@ -86,7 +86,9 @@ function* selectedInfoChanged(action) {
 
     const jsonResponses = yield call(allRequests);
 
-    const processedJsons = jsonResponses.map(resp => processQuandlJson(resp));
+    const processedJsons = jsonResponses.map(resp =>
+        processQuandlJson(resp, startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD'))
+    );
     const combinedJsonResponses = merge({}, cachedStockData, ...processedJsons);
 
     console.log("COMBINED JSON RESPONSES", combinedJsonResponses);
