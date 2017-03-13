@@ -15,6 +15,8 @@ export const getSelectedDate = (state) => state.selectedDate;
 export const getSelectedTickers = (state) => state.selectedTickers;
 export const getStoredStockData = (state) => state.storedStockData;
 
+const requestDateFormat = 'YYYYMMDD';
+
 function* selectedInfoChanged(action) {
     // check if the ticker is cached
     const storedStockData = yield select(getStoredStockData);
@@ -34,7 +36,7 @@ function* selectedInfoChanged(action) {
 
     // get cacheStatus for each ticker
     const cachedStockDataStatuses = selectedTickersString.map(ticker => {
-        return determineCachedStockDataStatus(storedStockData, startDate, endDate, ticker);
+        return determineCachedStockDataStatus(storedStockData, startDate, endDate, ticker, requestDateFormat);
     });
 
     // split into 3 categories
@@ -87,7 +89,7 @@ function* selectedInfoChanged(action) {
     const jsonResponses = yield call(allRequests);
 
     const processedJsons = jsonResponses.map(resp =>
-        processQuandlJson(resp, startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD'))
+        processQuandlJson(resp, startDate, endDate)
     );
     const combinedJsonResponses = merge({}, cachedStockData, ...processedJsons);
 
