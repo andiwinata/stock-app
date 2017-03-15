@@ -13,7 +13,7 @@ export const CACHE_AVAILABILITY = {
  */
 
 /**
- * @typedef {Object} CheckTickerCachedResult
+ * @typedef {Object} StockDataCacheStatus
  * @property {String} ticker
  * @property {CACHE_AVAILABILITY} cacheAvailability
  * @property {DateRange[]} dateGaps
@@ -30,7 +30,7 @@ export const CACHE_AVAILABILITY = {
  * @param {String} dateFormat
  * @returns {StockDataCacheStatus} Result
  */
-export function determineCachedStockDataStatus(storedData, startDate, endDate, ticker, dateFormat) {
+export function determineCachedStockDataStatus(storedData, startDate, endDate, ticker, dateFormat = 'YYYYMMDD') {
     if (typeof ticker !== 'string' && !(ticker instanceof String)) {
         throw new Error('Ticker must be string');
     }
@@ -67,8 +67,13 @@ export function determineCachedStockDataStatus(storedData, startDate, endDate, t
 
     // start date is earlier than stored ticker data start date
     const requestStartDateEarlierThanCache = startDate.isBefore(storedTickerData.startDate, 'day');
+    // end date is earlier than stored ticker data start date
+    const requestEndDateEarlierThanCache = endDate.isBefore(storedTickerData.startDate, 'day');
+
     // end date is later than stored ticker data end date
     const requestEndDateLaterThanCache = endDate.isAfter(storedTickerData.endDate, 'day');
+    // start date is later than stored ticker data end date
+    const requestStartDateLaterThanCache = startDate.isAfter(storedTickerData.endDate, 'day');
 
     console.log("REQUEST EARLIER, LATER", startDate.format(dateFormat), storedTickerData.startDate, endDate.format(dateFormat), storedTickerData.endDate);
     console.log(requestStartDateEarlierThanCache, requestEndDateLaterThanCache);
@@ -89,9 +94,18 @@ export function determineCachedStockDataStatus(storedData, startDate, endDate, t
         });
     }
 
-    // if some cache data exist, but the requested one has wider DateRange
-    if (requestStartDateEarlierThanCache || requestEndDateLaterThanCache) {
-        // then set partiallyCached to true
+    // if the requested date range is way earlier or later than stored daterange, mark it as non-cached
+    if ((requestStartDateEarlierThanCache && requestEndDateEarlierThanCache) ||
+        (requestStartDateLaterThanCache && requestEndDateLaterThanCache)) {
+        // then set cache status to none
+        resultObj.cacheAvailability = CACHE_AVAILABILITY.NONE;
+
+    } else if (!requestStartDateEarlierThanCache && !requestEndDateLaterThanCache) {
+        // if the requested daterange is actually inside stored daterange, mark as fully cached
+        resultObj.cacheAvailability = CACHE_AVAILABILITY.FULL;
+
+    } else { // otherwise it is partially cached
+        // then set cache status to partial
         resultObj.cacheAvailability = CACHE_AVAILABILITY.PARTIAL;
     }
 
