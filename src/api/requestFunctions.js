@@ -12,7 +12,7 @@ import URI from 'urijs';
  * @param {Object} extraParams
  * @returns {String} uri
  */
-export function constructRetrieveTickerDataUri(serverHost, tickers, startDate, endDate, apiKey, extraParams) {
+export function constructRetrieveTickerDataUri(serverHost, tickers, startDate, endDate, apiKey = null, extraParams = null) {
     let uri = new URI(serverHost)
         .setQuery({
             'ticker': tickers.join(','),
@@ -26,7 +26,7 @@ export function constructRetrieveTickerDataUri(serverHost, tickers, startDate, e
     }
 
     if (extraParams) {
-        if (extraParams === Object(extraParams)) {
+        if (extraParams === Object(extraParams) && !Array.isArray(extraParams)) {
             uri.setQuery(extraParams);
         } else {
             console.warn('extra params is not an object!');
@@ -37,16 +37,18 @@ export function constructRetrieveTickerDataUri(serverHost, tickers, startDate, e
 }
 
 /**
- * 
+ * @typedef RequestListObj
+ * @property {String[]} dateRange in string format: `${startDate}-${endDate}`
+ */
+
+/**
+ * Generate RequestListObj from StockDataCacheStatus
  * 
  * @export
- * @param {String} serverHost
  * @param {StockDataCacheStatus} cacheStatuses
- * @param {String} apiKey
- * @param {Object} extraParams
- * @returns {String[]} Array of URI/URLs
+ * @returns {RequestListObj} Object containing request list mapped by daterange as key
  */
-export function getRequestUrisForCacheStatuses(serverHost, cacheStatuses, apiKey, extraParams) {
+export function getRequestListObjForCacheStatuses(cacheStatuses) {
     const requestsList = {};
 
     // construct requestsList
@@ -62,7 +64,21 @@ export function getRequestUrisForCacheStatuses(serverHost, cacheStatuses, apiKey
         });
     });
 
-    console.log("REQUESTS LIST", requestsList);
+    return requestsList;
+}
+
+/**
+ * 
+ * 
+ * @export
+ * @param {String} serverHost
+ * @param {StockDataCacheStatus} cacheStatuses
+ * @param {String} apiKey
+ * @param {Object} extraParams
+ * @returns {String[]} Array of URI/URLs
+ */
+export function getRequestUrisForCacheStatuses(serverHost, cacheStatuses, apiKey = null, extraParams = null) {
+    const requestsList = getRequestListObjForCacheStatuses(cacheStatuses);
 
     // return constructed request url for every requestLists entry
     return Object.keys(requestsList).map(startEndDate => {

@@ -4,7 +4,7 @@ import * as reducer from './reducer';
 
 describe('Reducer Test.', () => {
 
-    describe('storedStockData', () => {
+    describe(`${reducer.storedStockData.name}`, () => {
 
         it('merges correctly with empty state', () => {
             const state = {};

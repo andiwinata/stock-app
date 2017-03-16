@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import * as storeFunctions from './storeFunctions';
 
-describe('Store functions test', () => {
+describe(`storeFunctions test`, () => {
 
     let storedStockData;
 
-    describe('determineCachedStockDataStatus() test', () => {
+    describe(`${storeFunctions.determineCachedStockDataStatus.name}`, () => {
 
         beforeEach(() => {
             storedStockData = {
