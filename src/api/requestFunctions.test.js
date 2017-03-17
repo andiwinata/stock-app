@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import * as requestFunctions from './requestFunctions';
 import * as storeFunctions from '../storeFunctions';
 import URI from 'urijs';
+import sinon from 'sinon';
 
 describe(`requestFunctions test`, () => {
 
@@ -211,45 +212,48 @@ describe(`requestFunctions test`, () => {
 
     describe(`${requestFunctions.getRequestUrisForCacheStatuses.name}`, () => {
 
-        // TODO SINON
-        // it('returns correct uri for cache statuses', () => {
-        //     // mocking data
-        //     const cacheStatuses = [
-        //         {
-        //             ticker: 'MSFT',
-        //             cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-        //             dateGaps: [
-        //                 { startDate: '20140909', endDate: '20150101' },
-        //                 { startDate: '20150108', endDate: '20160102' }
-        //             ]
-        //         },
-        //         {
-        //             ticker: 'MS',
-        //             cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-        //             dateGaps: [
-        //                 { startDate: '20140909', endDate: '20150101' },
-        //                 { startDate: '20150108', endDate: '20160102' }
-        //             ]
-        //         },
-        //         {
-        //             ticker: 'FB',
-        //             cacheAvailability: storeFunctions.CACHE_AVAILABILITY.NONE,
-        //             dateGaps: [
-        //                 { startDate: '20140909', endDate: '20160102' }
-        //             ]
-        //         }
-        //     ];
-        //     const serverName = 'file:///test.com';
+        it('runs collect logic to produce uris for cache statuses', () => {
+            // mocking data
+            const cacheStatuses = [
+                {
+                    ticker: 'MSFT',
+                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
+                    dateGaps: [
+                        { startDate: '20140909', endDate: '20150101' },
+                        { startDate: '20150108', endDate: '20160102' }
+                    ]
+                },
+                {
+                    ticker: 'MS',
+                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
+                    dateGaps: [
+                        { startDate: '20140909', endDate: '20150101' },
+                        { startDate: '20150108', endDate: '20160102' }
+                    ]
+                },
+                {
+                    ticker: 'FB',
+                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.NONE,
+                    dateGaps: [
+                        { startDate: '20140909', endDate: '20160102' }
+                    ]
+                }
+            ];
 
-        //     const reqList = requestFunctions.getRequestListObjForCacheStatuses(cacheStatuses);
+            // spy on the functions of the object
+            const reqListSpy = sinon.spy(requestFunctions, "getRequestListObjForCacheStatuses");
+            const constructUriSpy = sinon.spy(requestFunctions, "constructRetrieveTickerDataUri");
 
-        //     // tested variables
-        //     const uris = getRequestUrisForCacheStatuses(serverName, cacheStatuses);
+            // tested function
+            // inject the spies into the function
+            const uris = requestFunctions.getRequestUrisForCacheStatuses('file:///test.com', cacheStatuses,
+                null, null, requestFunctions);
 
-        //     expect(uris).to.deep.equal({
-
-        //     });
-        // });
+            // expect behaviour of the function
+            expect(reqListSpy.callCount).to.equal(1);
+            const reqListTotalItem = Object.keys(reqListSpy.returnValues[0]).length;
+            expect(constructUriSpy.callCount).to.equal(reqListTotalItem);
+        });
 
     });
 

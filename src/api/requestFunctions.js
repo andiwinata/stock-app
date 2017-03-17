@@ -75,14 +75,25 @@ export function getRequestListObjForCacheStatuses(cacheStatuses) {
  * @param {StockDataCacheStatus} cacheStatuses
  * @param {String} apiKey
  * @param {Object} extraParams
+ * @param {Object} functionDependencies
  * @returns {String[]} Array of URI/URLs
  */
-export function getRequestUrisForCacheStatuses(serverHost, cacheStatuses, apiKey = null, extraParams = null) {
-    const requestsList = getRequestListObjForCacheStatuses(cacheStatuses);
+export function getRequestUrisForCacheStatuses(serverHost, cacheStatuses, apiKey = null, extraParams = null, dependenciesInjector = null) {
+    // this is not ideal... 
+    // this is used for testing purposes
+    if (!dependenciesInjector) {
+        console.log('NO dependenciesInjector');
+        dependenciesInjector = {
+            getRequestListObjForCacheStatuses,
+            constructRetrieveTickerDataUri
+        };
+    }
+
+    const requestsList = dependenciesInjector.getRequestListObjForCacheStatuses(cacheStatuses);
 
     // return constructed request url for every requestLists entry
     return Object.keys(requestsList).map(startEndDate => {
         const [startDate, endDate] = startEndDate.split('-');
-        return constructRetrieveTickerDataUri(serverHost, requestsList[startEndDate], startDate, endDate, apiKey, extraParams);
+        return dependenciesInjector.constructRetrieveTickerDataUri(serverHost, requestsList[startEndDate], startDate, endDate, apiKey, extraParams);
     });
 }

@@ -92,5 +92,4 @@ export default combineReducers({
     storedStockData,
     apiKey,
     serverHost
-    // to add stored ticker data
 });
