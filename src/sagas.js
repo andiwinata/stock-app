@@ -2,70 +2,112 @@ import { call, put, takeEvery, takeLatest, select } from 'redux-saga/effects';
 import { delay } from 'redux-saga'
 import * as actionCreators from './actionCreators';
 import * as actionTypes from './actionTypes';
-import URI from 'urijs';
+
+import { processQuandlJson } from './api/tickerDataProcessor';
+import { determineCachedStockDataStatus, CACHE_AVAILABILITY } from './storeFunctions';
+import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses } from './api/requestFunctions';
+
+import merge from 'lodash.merge';
 
 export const getApiKey = (state) => state.apiKey;
 export const getServerHost = (state) => state.serverHost;
+export const getSelectedDate = (state) => state.selectedDate;
+export const getSelectedTickers = (state) => state.selectedTickers;
+export const getStoredStockData = (state) => state.storedStockData;
 
-export const formatDateYYMMDD = (date) => {
-    let yyyy = date.getFullYear();
+const requestDateFormat = 'YYYYMMDD';
 
-    let mm = date.getMonth() + 1;
-    mm = mm > 9 ? mm : '0' + mm;
-
-    let dd = date.getDate();
-    dd = dd > 9 ? dd : '0' + dd;
-
-    return `${yyyy}${mm}${dd}`;
-}
-
-function* tickerSelected(action) {
+function* selectedInfoChanged(action) {
     // check if the ticker is cached
+    const storedStockData = yield select(getStoredStockData);
 
-    // if not then make request to download
+    // get selected date
+    const dateRange = yield select(getSelectedDate);
+    const { startDate, endDate } = dateRange;
+    // get selected tickers
+    const selectedTickersObj = yield select(getSelectedTickers);
+    // get the string of tickers
+    const selectedTickersString = selectedTickersObj.map(selectedTickerObj => selectedTickerObj.value);
+
     const serverHost = yield select(getServerHost);
     const apiKey = yield select(getApiKey);
 
-    let fromDate = new Date(2017, 0, 1);
-    // yesterday date
-    let toDate = new Date();
-    toDate.setDate(toDate.getDate() - 1);
+    console.log('check ticker cache', startDate, endDate, selectedTickersString);
 
-    let uri = new URI(serverHost)
-        .setQuery({
-            'ticker': action.selectedTickers.slice(-1)[0].value,
-            'date.gte': formatDateYYMMDD(fromDate),
-            'date.lte': formatDateYYMMDD(toDate)
-        });
+    // get cacheStatus for each ticker
+    const cachedStockDataStatuses = selectedTickersString.map(ticker => {
+        return determineCachedStockDataStatus(storedStockData, startDate, endDate, ticker, requestDateFormat);
+    });
 
-    // only set api key if not null
-    if (apiKey) {
-        uri.setQuery('api_key', apiKey);
+    // split into 3 categories
+    const fullyCachedStatuses = cachedStockDataStatuses.filter(cacheStatus => cacheStatus.cacheAvailability === CACHE_AVAILABILITY.FULL);
+    const partiallyCachedStatuses = cachedStockDataStatuses.filter(cacheStatus => cacheStatus.cacheAvailability === CACHE_AVAILABILITY.PARTIAL);
+    const nonCachedStatuses = cachedStockDataStatuses.filter(cacheStatus => cacheStatus.cacheAvailability === CACHE_AVAILABILITY.NONE);
+
+    console.log('CACHE STATUSES', fullyCachedStatuses, partiallyCachedStatuses, nonCachedStatuses);
+
+    const cachedTickerNames = [
+        ...fullyCachedStatuses.map(cacheStatus => cacheStatus.ticker),
+        ...partiallyCachedStatuses.map(cacheStatus => cacheStatus.ticker),
+    ];
+    console.log("CACHED TICKER NAMES:", cachedTickerNames);
+
+    const cachedStockData = {};
+    cachedTickerNames.forEach((tickerName) => {
+        cachedStockData[tickerName] = storedStockData[tickerName];
+    });
+
+    console.log("CACHED STOCK DATA", cachedStockData);
+
+    // check if no non-cached data
+    if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
+        // no need to make request, just return cached data
+        yield put(actionCreators.tickerDataReceived(
+            cachedStockData,
+            selectedTickersObj,
+            dateRange
+        ));
+        return;
     }
 
-    let req = () => {
-        return fetch(uri)
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('response is not okay!');
-            })
-            .then(json => {
-                return json;
-            })
-            .catch(error => {
-                console.log('Error when fetching data', error);
-                return 'Error when fetching data!';
-            });
-    };
+    const requestUris = getRequestUrisForCacheStatuses(serverHost, [...partiallyCachedStatuses, ...nonCachedStatuses], apiKey);
+    console.log("REQUEST URIS", requestUris);
 
-    let jsonResponse = yield call(req);
-    yield put(actionCreators.fetchTickerDataReceived(jsonResponse));
+    const uriPromises = requestUris.map(uri => fetch(uri)
+        .then(resp => {
+            console.log('RESPONSE', resp);
+            if (resp.ok) {
+                return resp.json();
+            }
+            throw new Error('response is not okay!');
+        })
+    );
+
+    const allRequests = () => Promise.all(uriPromises)
+        .then(jsonResponses => Promise.all(jsonResponses));
+
+    const jsonResponses = yield call(allRequests);
+
+    const processedJsons = jsonResponses.map(resp =>
+        processQuandlJson(resp, startDate, endDate)
+    );
+    const combinedJsonResponses = merge({}, cachedStockData, ...processedJsons);
+
+    console.log("COMBINED JSON RESPONSES", combinedJsonResponses);
+    yield put(actionCreators.tickerDataReceived(
+        combinedJsonResponses,
+        selectedTickersObj,
+        dateRange
+    ));
 }
 
 function* stockAppSaga() {
-    yield takeEvery(actionTypes.SELECTED_TICKER_CHANGED, tickerSelected);
+    yield [
+        takeEvery(
+            [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
+            selectedInfoChanged
+        )
+    ];
 }
 
 export default stockAppSaga;

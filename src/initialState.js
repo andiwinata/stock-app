@@ -15,8 +15,9 @@ const serverHost = isLocal ?
 const initialState = {
     selectedTickers: [],
     selectedDate: initialSelectedDate,
-    shownTickers: {},
+    shownTickers: [],
     shownDate: {},
+    storedStockData: {},
     apiKey: null, // to be passed to server if not null
     serverHost
 }
