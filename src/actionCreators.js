@@ -22,9 +22,11 @@ export function selectedDateChanged(selectedDate) {
     }
 }
 
-export function fetchTickerDataReceived(tickerData) {
+export function tickerDataReceived(receivedTickerData, receivedTickers, receivedDate) {
     return {
-        type: actionTypes.FETCH_TICKER_DATA_RECEIVED,
-        tickerData
+        type: actionTypes.TICKER_DATA_RECEIVED,
+        receivedTickerData,
+        receivedTickers,
+        receivedDate
     }
 }
