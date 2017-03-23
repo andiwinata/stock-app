@@ -29,7 +29,12 @@ export class App extends PureComponent {
                 <ShownTickers
                     shownTickers={this.props.shownTickers}
                 />
-                <StockChart />
+                <StockChart
+                    shownTickers={this.props.shownTickers}
+                    shownDate={this.props.shownDate}
+                    // doing deep copy to avoid mutation of stored stock data
+                    storedStockData={Object.assign({}, this.props.storedStockData)}
+                />
             </div>
         );
     }
