@@ -3,6 +3,7 @@ import moment from 'moment';
 
 import Highcharts from 'highcharts/highstock';
 require('highcharts/modules/exporting')(Highcharts);
+require('highcharts/modules/boost')(Highcharts);
 
 import { TICKER_DATA_COL_NAME_TO_INDEX } from '../api/tickerDataProcessor';
 
@@ -17,6 +18,11 @@ class StockChart extends PureComponent {
             chart: {
                 renderTo: 'stockChartContainer'
             },
+            plotOptions: {
+                series: {
+                    showInNavigator: true,
+                }
+            },
             title: {
                 text: 'Stock Historical'
             },
@@ -25,7 +31,9 @@ class StockChart extends PureComponent {
                 dateTimeLabelFormats: {
                     day: '%e of %b'
                 },
-                crosshair: true
+                crosshair: {
+                    color: 'green'
+                }
             }],
             yAxis: [{
                 labels: {
@@ -52,7 +60,9 @@ class StockChart extends PureComponent {
                 lineWidth: 2
             }],
             tooltip: {
-                split: true
+                split: true,
+                shared: true,
+                useHTML: true
             },
             series: [{
                 type: 'candlestick',
@@ -60,7 +70,8 @@ class StockChart extends PureComponent {
                 data: [],
                 dataGrouping: {
                     units: groupingUnits
-                }
+                },
+                stickyTracking: true,
             }, {
                 type: 'column',
                 name: 'Volume',
@@ -68,7 +79,8 @@ class StockChart extends PureComponent {
                 yAxis: 1,
                 dataGrouping: {
                     units: groupingUnits
-                }
+                },
+                stickyTracking: true,
             }]
         };
 
@@ -90,7 +102,12 @@ class StockChart extends PureComponent {
         this.ohlc = [];
         this.volume = [];
 
-        Object.keys(storedTickerData).forEach((storedDate) => {
+        const dateKeys = Object.keys(storedTickerData);
+        dateKeys.sort((a, b) => {
+            return new Date(a) - new Date(b);
+        });
+
+        dateKeys.forEach((storedDate) => {
             // date in range inclusive
             const dateInRange = moment(storedDate).isBetween(startDate, endDate, 'days', '[]');
 
@@ -113,7 +130,7 @@ class StockChart extends PureComponent {
                 this.volume.push(volumeData);
             }
         });
-        // console.log("FINAL DATA", this.ohlc, this.volume, this.ohlc.length);
+        console.log("FINAL DATA", this.ohlc, this.volume, this.ohlc.length);
 
         this.chart.series[0].update({
             data: this.ohlc,
@@ -128,7 +145,7 @@ class StockChart extends PureComponent {
 
     render() {
         return (
-            <div id='stockChartContainer'>
+            <div id='stockChartContainer' style={{ height: "100%" }}>
 
             </div>
         );

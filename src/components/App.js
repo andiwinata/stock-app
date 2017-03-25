@@ -15,7 +15,7 @@ import styles from './App.css';
 export class App extends PureComponent {
     render() {
         return (
-            <div styleName="full-width">
+            <main styleName="app-main">
                 <h1>Select Tickers:</h1>
                 <TickerSelect
                     selectedTickerChanged={this.props.selectedTickerChanged}
@@ -35,7 +35,7 @@ export class App extends PureComponent {
                     // doing deep copy to avoid mutation of stored stock data
                     storedStockData={Object.assign({}, this.props.storedStockData)}
                 />
-            </div>
+            </main>
         );
     }
 }
@@ -44,7 +44,7 @@ function mapStateToProps(state) {
     return state;
 }
 
-const AppCSS = CSSModules(App, styles);
+const AppCSS = CSSModules(App, styles, {allowMultiple: true});
 
 export const AppContainer = connect(
     mapStateToProps,
