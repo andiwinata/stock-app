@@ -5,6 +5,13 @@ import Highcharts from 'highcharts/highstock';
 require('highcharts/modules/exporting')(Highcharts);
 require('highcharts/modules/boost')(Highcharts);
 
+// workaround of a bug tooltip not showing up outside chart area
+// https://github.com/highcharts/highcharts/issues/6456
+Highcharts.wrap(Highcharts.Pointer.prototype, 'getHoverData', function (proceed, a, b, c, isDirectTouch, shared, f) {
+    var directTouch = shared ? false : directTouch;
+    return proceed.apply(this, [a, b, c, directTouch, shared, f]);
+});
+
 import { TICKER_DATA_COL_NAME_TO_INDEX } from '../api/tickerDataProcessor';
 
 const groupingUnits = [
@@ -30,9 +37,6 @@ class StockChart extends PureComponent {
                 type: 'datetime',
                 dateTimeLabelFormats: {
                     day: '%e of %b'
-                },
-                crosshair: {
-                    color: 'green'
                 }
             }],
             yAxis: [{
