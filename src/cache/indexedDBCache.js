@@ -1,6 +1,10 @@
 const stockDataTest = [
     { date: "1234", ticker: 'MSFT', open: 50, close: 100 },
-    { date: "3231", ticker: 'AMZN', open: 25, close: 233 },
+    { date: "3456", ticker: 'MSFT', open: 11, close: 312 },
+    { date: "2345", ticker: 'MSFT', open: 75, close: 551 },
+    { date: "4567", ticker: 'AMZN', open: 25, close: 233 },
+    { date: "5678", ticker: 'AMZN', open: 35, close: 456 },
+    { date: "3231", ticker: 'AMZN', open: 42, close: 12 },
 ];
 
 const QuandlIndexedDBCache = {
@@ -11,7 +15,9 @@ const QuandlIndexedDBCache = {
     },
 
     config: {
-        dbName: "quandl_stock_cache"
+        dbName: "quandlStockCache",
+        objectStoreName: "tickerObjectStore",
+        generatedKeyPathName: "tickerDate"
     },
 
     addStockDataToCache(tickerName) {
@@ -23,17 +29,17 @@ const QuandlIndexedDBCache = {
         // open or create database
         let request = indexedDB.open(this.config.dbName, 1);
 
-        request.onerror = function (event) {
-            console.error(`Fail to open indexed DB with name ${dbName}`);
+        request.onerror = (event) => {
+            console.error(`Fail to open indexed DB with name ${this.config.dbName}`);
         };
 
-        request.onupgradeneeded = function (event) {
+        request.onupgradeneeded = (event) => {
             console.log("Upgrade needed");
             let db = event.target.result;
 
             let objectStore = db.createObjectStore(tickerName, { keyPath: "date" });
 
-            objectStore.transaction.oncomplete = function (event) {
+            objectStore.transaction.oncomplete = (event) => {
                 let tickerObjectStore = db.transaction(tickerName, "readwrite").objectStore(tickerName);
                 for (let stockData of stockDataTest) {
                     tickerObjectStore.add(stockData);
@@ -58,17 +64,25 @@ const QuandlIndexedDBCache = {
             // open or create database
             let request = indexedDB.open(this.config.dbName, 1);
 
-            request.onerror = function (event) {
+            request.onerror = (event) => {
                 console.error(`Fail to open indexed DB with name ${this.config.dbName}`);
             };
 
-            request.onupgradeneeded = function (event) {
+            request.onupgradeneeded = (event) => {
                 console.log('indexedDB upgrade needed');
+
                 this._db = event.target.result;
-                callback(this._db);
+
+                const objectStore = this._db.createObjectStore(this.config.objectStoreName, { keyPath: this.config.generatedKeyPathName });
+                objectStore.createIndex('ticker', 'ticker', { unique: false });
+                objectStore.createIndex('date', 'date', { unique: false });
+
+                objectStore.transaction.oncomplete = (event) => {
+                    callback(this._db);
+                };
             };
 
-            request.onsuccess = function (event) {
+            request.onsuccess = (event) => {
                 console.log('successfully open connection to db');
                 this._db = event.target.result;
                 callback(this._db);
@@ -80,25 +94,21 @@ const QuandlIndexedDBCache = {
 
     },
 
-    addTickerData(tickerName, tickerData) {
+    putTickerData(tickerName, tickerData) {
         this.getOrCreateQuandlIndexedDB((db) => {
 
-            // if objectStore has not yet created
-            if (!db.objectStoreNames.contains('tickerName')) {
-                db.createObjectStore(tickerName, { keyPath: 'date' });
-            }
-
-            const tickerNameStore = db.transaction([tickerName], 'readwrite').objectStore(tickerName);
+            const tickerNameStore = db.transaction([this.config.objectStoreName], 'readwrite').objectStore(this.config.objectStoreName);
             tickerData.forEach((value) => {
-                tickerNameStore.add(value);
+                value[this.config.generatedKeyPathName] = `${value.ticker}_${value.date}`;
+                tickerNameStore.put(value);
             });
         });
     },
 
     init() {
         this.assignLegacyIndexedDB();
-        this.addStockDataToCache('HELLOTEST2');
-        this.addTickerData('hellotest22', stockDataTest);
+        // this.addStockDataToCache('HELLOTEST2');
+        this.putTickerData('hellotest22', stockDataTest);
     }
 };
 
