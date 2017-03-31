@@ -20,34 +20,6 @@ const QuandlIndexedDBCache = {
         generatedKeyPathName: "tickerDate"
     },
 
-    addStockDataToCache(tickerName) {
-        if (!this.isIndexedDBExist) {
-            window.alert("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
-            return;
-        }
-
-        // open or create database
-        let request = indexedDB.open(this.config.dbName, 1);
-
-        request.onerror = (event) => {
-            console.error(`Fail to open indexed DB with name ${this.config.dbName}`);
-        };
-
-        request.onupgradeneeded = (event) => {
-            console.log("Upgrade needed");
-            let db = event.target.result;
-
-            let objectStore = db.createObjectStore(tickerName, { keyPath: "date" });
-
-            objectStore.transaction.oncomplete = (event) => {
-                let tickerObjectStore = db.transaction(tickerName, "readwrite").objectStore(tickerName);
-                for (let stockData of stockDataTest) {
-                    tickerObjectStore.add(stockData);
-                }
-            }
-        };
-    },
-
     assignLegacyIndexedDB() {
         window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || { READ_WRITE: "readwrite" }; // This line should only be needed if it is needed to support the object's constants for older browsers
         window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
@@ -96,8 +68,8 @@ const QuandlIndexedDBCache = {
 
     putTickerData(tickerName, tickerData) {
         this.getOrCreateQuandlIndexedDB((db) => {
-
             const tickerNameStore = db.transaction([this.config.objectStoreName], 'readwrite').objectStore(this.config.objectStoreName);
+            
             tickerData.forEach((value) => {
                 value[this.config.generatedKeyPathName] = `${value.ticker}_${value.date}`;
                 tickerNameStore.put(value);
@@ -105,9 +77,12 @@ const QuandlIndexedDBCache = {
         });
     },
 
+    getTickerData(tickerName, fromDate, toDate) {
+
+    },
+
     init() {
         this.assignLegacyIndexedDB();
-        // this.addStockDataToCache('HELLOTEST2');
         this.putTickerData('hellotest22', stockDataTest);
     }
 };
