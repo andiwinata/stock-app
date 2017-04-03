@@ -66,24 +66,60 @@ const QuandlIndexedDBCache = {
 
     },
 
-    putTickerData(tickerName, tickerData) {
+    putTickerData(tickerData, onFinish) {
         this.getOrCreateQuandlIndexedDB((db) => {
-            const tickerNameStore = db.transaction([this.config.objectStoreName], 'readwrite').objectStore(this.config.objectStoreName);
+            const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readwrite').objectStore(this.config.objectStoreName);
             
             tickerData.forEach((value) => {
                 value[this.config.generatedKeyPathName] = `${value.ticker}_${value.date}`;
-                tickerNameStore.put(value);
+                tickerObjectStore.put(value);
             });
+
+            if (onFinish) {
+                onFinish();
+            }
         });
     },
 
-    getTickerData(tickerName, fromDate, toDate) {
+    getTickerData(tickerName, fromDate, toDate, onFinish) {
+        this.getOrCreateQuandlIndexedDB((db) => {
+            const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readonly').objectStore(this.config.objectStoreName);
+            const dateIndex = tickerObjectStore.index('date');
+            const dateBoundRange = IDBKeyRange.bound(fromDate, toDate);
 
+            const cursorReq = dateIndex.openCursor(dateBoundRange);
+            const tickersData = [];
+
+            cursorReq.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    // checking if ticker name is the one that is needed
+                    if (cursor.value.ticker === tickerName) {
+                        tickersData.push(cursor.value);
+                    }
+
+                    cursor.continue();
+                } else {
+                    console.log(`Finish traversing using the cursors`);
+                    onFinish(tickersData);
+                }
+            };
+
+            cursorReq.onerror = (event) => {
+                console.error(`There is an error while getting data for tickerName: ${tickerName}\n
+                With error: \n${cursorReq.error}`);
+
+                if (onFinish) {
+                    onFinish(null);
+                }
+            };
+        });
     },
 
     init() {
         this.assignLegacyIndexedDB();
-        this.putTickerData('hellotest22', stockDataTest);
+        this.putTickerData(stockDataTest);
+        // this.getTickerData();
     }
 };
 
