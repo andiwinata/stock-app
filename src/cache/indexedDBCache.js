@@ -17,7 +17,8 @@ const QuandlIndexedDBCache = {
     config: {
         dbName: "quandlStockCache",
         objectStoreName: "tickerObjectStore",
-        generatedKeyPathName: "tickerDate"
+        generatedKeyPathName: "tickerDate",
+        tickerDateIndexName: 'tickerDate'
     },
 
     assignLegacyIndexedDB() {
@@ -45,9 +46,13 @@ const QuandlIndexedDBCache = {
 
                 this._db = event.target.result;
 
-                const objectStore = this._db.createObjectStore(this.config.objectStoreName, { keyPath: this.config.generatedKeyPathName });
-                objectStore.createIndex('ticker', 'ticker', { unique: false });
-                objectStore.createIndex('date', 'date', { unique: false });
+                const objectStore = this._db.createObjectStore(this.config.objectStoreName);
+                // be careful with short circuiting problem
+                // http://stackoverflow.com/questions/12084177/in-indexeddb-is-there-a-way-to-make-a-sorted-compound-query
+                objectStore.createIndex(this.config.tickerDateIndexName, ['ticker', 'date'], { unique: true});
+                
+                // objectStore.createIndex('ticker', 'ticker', { unique: false });
+                // objectStore.createIndex('date', 'date', { unique: false });
 
                 objectStore.transaction.oncomplete = (event) => {
                     callback(this._db);
@@ -71,7 +76,7 @@ const QuandlIndexedDBCache = {
             const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readwrite').objectStore(this.config.objectStoreName);
             
             tickerData.forEach((value) => {
-                value[this.config.generatedKeyPathName] = `${value.ticker}_${value.date}`;
+                // value[this.config.generatedKeyPathName] = `${value.ticker}_${value.date}`;
                 tickerObjectStore.put(value);
             });
 
