@@ -17,7 +17,6 @@ const QuandlIndexedDBCache = {
     config: {
         dbName: "quandlStockCache",
         objectStoreName: "tickerObjectStore",
-        generatedKeyPathName: "tickerDate",
         tickerDateIndexName: 'tickerDate'
     },
 
@@ -46,13 +45,10 @@ const QuandlIndexedDBCache = {
 
                 this._db = event.target.result;
 
-                const objectStore = this._db.createObjectStore(this.config.objectStoreName);
+                const objectStore = this._db.createObjectStore(this.config.objectStoreName, { autoIncrement: true });
                 // be careful with short circuiting problem
                 // http://stackoverflow.com/questions/12084177/in-indexeddb-is-there-a-way-to-make-a-sorted-compound-query
-                objectStore.createIndex(this.config.tickerDateIndexName, ['ticker', 'date'], { unique: true});
-                
-                // objectStore.createIndex('ticker', 'ticker', { unique: false });
-                // objectStore.createIndex('date', 'date', { unique: false });
+                objectStore.createIndex(this.config.tickerDateIndexName, ['ticker', 'date'], { unique: true });
 
                 objectStore.transaction.oncomplete = (event) => {
                     callback(this._db);
@@ -74,14 +70,13 @@ const QuandlIndexedDBCache = {
     putTickerData(tickerData, onFinish) {
         this.getOrCreateQuandlIndexedDB((db) => {
             const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readwrite').objectStore(this.config.objectStoreName);
-            
+
             tickerData.forEach((value) => {
-                // value[this.config.generatedKeyPathName] = `${value.ticker}_${value.date}`;
                 tickerObjectStore.put(value);
             });
 
             if (onFinish) {
-                onFinish();
+                onFinish(); // TODO make promise for this
             }
         });
     },
@@ -89,8 +84,8 @@ const QuandlIndexedDBCache = {
     getTickerData(tickerName, fromDate, toDate, onFinish) {
         this.getOrCreateQuandlIndexedDB((db) => {
             const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readonly').objectStore(this.config.objectStoreName);
-            const dateIndex = tickerObjectStore.index('date');
-            const dateBoundRange = IDBKeyRange.bound(fromDate, toDate);
+            const dateIndex = tickerObjectStore.index(this.config.tickerDateIndexName);
+            const dateBoundRange = IDBKeyRange.bound([tickerName, fromDate], [tickerName, toDate]);
 
             const cursorReq = dateIndex.openCursor(dateBoundRange);
             const tickersData = [];
@@ -98,11 +93,7 @@ const QuandlIndexedDBCache = {
             cursorReq.onsuccess = (event) => {
                 const cursor = event.target.result;
                 if (cursor) {
-                    // checking if ticker name is the one that is needed
-                    if (cursor.value.ticker === tickerName) {
-                        tickersData.push(cursor.value);
-                    }
-
+                    tickersData.push(cursor.value);
                     cursor.continue();
                 } else {
                     console.log(`Finish traversing using the cursors`);
@@ -124,7 +115,9 @@ const QuandlIndexedDBCache = {
     init() {
         this.assignLegacyIndexedDB();
         this.putTickerData(stockDataTest);
-        // this.getTickerData();
+        this.getTickerData('AMZN', '2222', '9999', (data) => { 
+            console.log('GET TICKER DATA:', data); 
+        });
     }
 };
 
