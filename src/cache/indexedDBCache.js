@@ -1,10 +1,12 @@
+import moment from 'moment';
+
 const stockDataTest = [
-    { date: "1234", ticker: 'MSFT', open: 50, close: 100 },
-    { date: "3456", ticker: 'MSFT', open: 11, close: 312 },
-    { date: "2345", ticker: 'MSFT', open: 75, close: 551 },
-    { date: "4567", ticker: 'AMZN', open: 25, close: 233 },
-    { date: "5678", ticker: 'AMZN', open: 35, close: 456 },
-    { date: "3231", ticker: 'AMZN', open: 42, close: 12 },
+    { date: "20170106", ticker: 'MSFT', open: 50, close: 100 },
+    { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
+    { date: "20170108", ticker: 'MSFT', open: 75, close: 551 },
+    { date: "20170109", ticker: 'AMZN', open: 25, close: 233 },
+    { date: "20170112", ticker: 'AMZN', open: 35, close: 456 },
+    { date: "20170113", ticker: 'AMZN', open: 42, close: 12 },
 ];
 
 const QuandlIndexedDBCache = {
@@ -25,98 +27,165 @@ const QuandlIndexedDBCache = {
         window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
     },
 
-    getOrCreateQuandlIndexedDB(callback) {
-        if (!this.isIndexedDBExist) {
-            window.alert("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
-            return;
-        }
+    getOrCreateQuandlIndexedDB() {
+        return new Promise((resolve, reject) => {
+            if (!this.isIndexedDBExist) {
+                window.alert("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
+                reject("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
+                return;
+            }
 
-        // check if connection to db has not yet created
-        if (!this._db) {
-            // open or create database
-            let request = indexedDB.open(this.config.dbName, 1);
+            // check if connection to db has not yet created
+            if (!this._db) {
+                // open or create database
+                let request = indexedDB.open(this.config.dbName, 1);
 
-            request.onerror = (event) => {
-                console.error(`Fail to open indexed DB with name ${this.config.dbName}`);
-            };
-
-            request.onupgradeneeded = (event) => {
-                console.log('indexedDB upgrade needed');
-
-                this._db = event.target.result;
-
-                const objectStore = this._db.createObjectStore(this.config.objectStoreName, { autoIncrement: true });
-                // be careful with short circuiting problem
-                // http://stackoverflow.com/questions/12084177/in-indexeddb-is-there-a-way-to-make-a-sorted-compound-query
-                objectStore.createIndex(this.config.tickerDateIndexName, ['ticker', 'date'], { unique: true });
-
-                objectStore.transaction.oncomplete = (event) => {
-                    callback(this._db);
+                request.onerror = (event) => {
+                    console.error(`Fail to open indexed DB with name ${this.config.dbName}`);
+                    reject(`Fail to open indexed DB with name ${this.config.dbName}`);
                 };
-            };
 
-            request.onsuccess = (event) => {
-                console.log('successfully open connection to db');
-                this._db = event.target.result;
-                callback(this._db);
-            };
-        } else {
-            // if connection has been opened, call the callback
-            callback(this._db);
-        }
+                request.onupgradeneeded = (event) => {
+                    console.log('indexedDB upgrade needed');
+
+                    this._db = event.target.result;
+
+                    const objectStore = this._db.createObjectStore(this.config.objectStoreName, { autoIncrement: true });
+                    // be careful with short circuiting problem
+                    // http://stackoverflow.com/questions/12084177/in-indexeddb-is-there-a-way-to-make-a-sorted-compound-query
+                    objectStore.createIndex(this.config.tickerDateIndexName, ['ticker', 'date'], { unique: true });
+
+                    objectStore.transaction.oncomplete = (event) => {
+                        resolve(this._db);
+                    };
+                };
+
+                request.onsuccess = (event) => {
+                    console.log('successfully open connection to db');
+                    this._db = event.target.result;
+                    resolve(this._db);
+                };
+            } else {
+                // if connection has been opened, resolve the promise
+                resolve(this._db);
+            }
+        });
 
     },
 
-    putTickerData(tickerData, onFinish) {
-        this.getOrCreateQuandlIndexedDB((db) => {
-            const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readwrite').objectStore(this.config.objectStoreName);
+    // TODO define what data structure will be passed in
+    putTickerData(tickerData, tickerName, startDate, endDate, dateFormat = 'YYYYMMDD') {
+        return new Promise((resolve, reject) => {
 
-            tickerData.forEach((value) => {
-                tickerObjectStore.put(value);
+            // check start date end date valiidty
+            if (moment(endDate).isBefore(startDate, 'day')) {
+                console.error(`End date cannot be before the startDate!`);
+                reject(`End date cannot be before the startDate!`);
+                return;
+            }
+
+            this.getOrCreateQuandlIndexedDB().then((db) => {
+                const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readwrite')
+                    .objectStore(this.config.objectStoreName);
+
+                // make a Map() containing ticker data with date as its value
+                const tickerDataByDate = new Map();
+                for (let value of tickerData) {
+                    tickerDataByDate.set(value.date, value);
+                }
+
+                // put all promises for putting data into indexed db
+                const putPromises = [];
+
+                // iterate through startDate and endDate (inclusive)
+                // http://stackoverflow.com/questions/17163809/iterate-through-a-range-of-dates-in-nodejs
+                for (let currDate = moment(startDate); currDate.diff(endDate, 'days') <= 0; currDate.add(1, 'days')) {
+                    const tickerDataOnDate = tickerDataByDate.get(currDate.format(dateFormat));
+                    const emptyValue = {
+                        date: currDate.format(dateFormat),
+                        ticker: tickerName
+                    };
+
+                    // if there is ticker data for current date, use it,
+                    // otherwise just make empty value to be added to database
+                    // so that there will be no missing date gap
+                    const putValue = tickerDataOnDate ? tickerDataOnDate : emptyValue;
+
+                    putPromises.push(new Promise((resolve, reject) => {
+
+                        const putRequest = tickerObjectStore.put(putValue);
+                        putRequest.onsuccess = (event) => {
+                            resolve(putValue);
+                        };
+                        putRequest.onerror = (event) => {
+                            reject(`Fail to put ${putValue} to objectStore. ${putRequest.error}`);
+                        };
+                    }));
+
+                }
+
+                Promise.all(putPromises).then((results) => {
+                    resolve('Put ticker data is done');
+                }).catch((error) => {
+                    reject(error);
+                });
+
+            }).catch((getDbError) => {
+                reject(getDbError);
             });
 
-            if (onFinish) {
-                onFinish(); // TODO make promise for this
-            }
         });
     },
 
-    getTickerData(tickerName, fromDate, toDate, onFinish) {
-        this.getOrCreateQuandlIndexedDB((db) => {
-            const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readonly').objectStore(this.config.objectStoreName);
-            const dateIndex = tickerObjectStore.index(this.config.tickerDateIndexName);
-            const dateBoundRange = IDBKeyRange.bound([tickerName, fromDate], [tickerName, toDate]);
+    getTickerData(tickerName, fromDate, toDate) {
+        return new Promise((resolve, reject) => {
 
-            const cursorReq = dateIndex.openCursor(dateBoundRange);
-            const tickersData = [];
+            this.getOrCreateQuandlIndexedDB().then((db) => {
+                const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readonly')
+                    .objectStore(this.config.objectStoreName);
+                const dateIndex = tickerObjectStore.index(this.config.tickerDateIndexName);
+                const dateBoundRange = IDBKeyRange.bound([tickerName, fromDate], [tickerName, toDate]);
 
-            cursorReq.onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    tickersData.push(cursor.value);
-                    cursor.continue();
-                } else {
-                    console.log(`Finish traversing using the cursors`);
-                    onFinish(tickersData);
-                }
-            };
+                const cursorReq = dateIndex.openCursor(dateBoundRange);
+                const tickersData = [];
 
-            cursorReq.onerror = (event) => {
-                console.error(`There is an error while getting data for tickerName: ${tickerName}\n
-                With error: \n${cursorReq.error}`);
+                cursorReq.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        tickersData.push(cursor.value);
+                        cursor.continue();
+                    } else {
+                        console.log(`Finish traversing using the cursors`);
+                        resolve(tickersData);
+                    }
+                };
 
-                if (onFinish) {
-                    onFinish(null);
-                }
-            };
+                cursorReq.onerror = (event) => {
+                    console.error(`There is an error while getting data for tickerName: ${tickerName}\nWith error: \n${cursorReq.error}`);
+                    reject(cursorReq.error);
+                };
+
+            }).catch((getDbError) => {
+                reject(getDbError);
+            });
+
         });
     },
 
     init() {
+        
         this.assignLegacyIndexedDB();
-        this.putTickerData(stockDataTest);
-        this.getTickerData('AMZN', '2222', '9999', (data) => { 
-            console.log('GET TICKER DATA:', data); 
+        this.putTickerData(stockDataTest, 'FB', '20170101', '20170201').then((msg) => {
+            this.testGetTickerData();
+        }).catch((err) => {
+            this.testGetTickerData();
+        });
+
+    },
+
+    testGetTickerData() {
+        this.getTickerData('FB', '20170101', '20170109').then((data) => {
+            console.log('GET TICKER DATA:', data);
         });
     }
 };
