@@ -53,9 +53,7 @@ describe('indexedDBCache test', () => {
                 // test length
                 expect(results.length).to.deep.equal(stockDataTest.length);
 
-                let expectedKeys = stockDataTest.map(stockData => {
-                    return QuandlIndexedDBCache.getTickerObjectStoreKey(stockData);
-                });
+                let expectedKeys = stockDataTest.map(QuandlIndexedDBCache.getTickerObjectStoreKey);
                 // sort expectedKeys
                 expectedKeys = expectedKeys.sort(stockDataComparer);
 
