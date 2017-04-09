@@ -1,3 +1,5 @@
+import moment from 'moment';
+
 const stockDataTest = [
     { date: "20170106", ticker: 'MSFT', open: 50, close: 100 },
     { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
@@ -6,6 +8,10 @@ const stockDataTest = [
     { date: "20170112", ticker: 'AMZN', open: 35, close: 456 },
     { date: "20170113", ticker: 'AMZN', open: 42, close: 12 },
 ];
+
+const isString = (str) => {
+    return (typeof str === 'string' || str instanceof String);
+};
 
 const QuandlIndexedDBCache = {
     get isIndexedDBExist() {
@@ -18,6 +24,12 @@ const QuandlIndexedDBCache = {
         dbName: "quandlStockCache",
         objectStoreName: "tickerObjectStore",
         tickerDateIndexName: 'tickerDate'
+    },
+
+    CACHE_AVAILABILITY: {
+        FULL: 'FULL',
+        PARTIAL: 'PARTIAL',
+        NONE: 'NONE'
     },
 
     assignLegacyIndexedDB() {
@@ -49,6 +61,7 @@ const QuandlIndexedDBCache = {
                     this._db = event.target.result;
 
                     const objectStore = this._db.createObjectStore(this.config.objectStoreName);
+                    // create index based on ticker and date
                     // be careful with short circuiting problem
                     // http://stackoverflow.com/questions/12084177/in-indexeddb-is-there-a-way-to-make-a-sorted-compound-query
                     objectStore.createIndex(this.config.tickerDateIndexName, ['ticker', 'date'], { unique: true });
@@ -75,7 +88,6 @@ const QuandlIndexedDBCache = {
         return `${stockData.ticker}${stockData.date}`;
     },
 
-    // TODO define what data structure will be passed in
     putTickerData(tickerData) {
         return new Promise((resolve, reject) => {
 
@@ -94,7 +106,7 @@ const QuandlIndexedDBCache = {
                             this.getTickerObjectStoreKey(tickerValue)
                         );
                         putRequest.onsuccess = (event) => {
-                            resolve(event.target.result);
+                            resolve(putRequest.result);
                         };
                         putRequest.onerror = (event) => {
                             reject(`Fail to put ${tickerValue} to objectStore. ${putRequest.error}`);
@@ -147,6 +159,186 @@ const QuandlIndexedDBCache = {
                 reject(getDbError);
             });
 
+        });
+    },
+
+    cacheStatusFactory(cacheAvailability = this.CACHE_AVAILABILITY.NONE, cacheData = [], dateGaps = []) {
+        const validDateGaps = dateGaps.every(gap => 'startDate' in gap && 'endDate' in gap);
+        if (!validDateGaps) {
+            throw new TypeError(`dateGaps must contain only dateGap object`);
+        }
+
+        return {
+            cacheAvailability,
+            cacheData,
+            dateGaps
+        };
+    },
+
+    dateGapFactory(startDate, endDate) {
+        if (!isString(startDate) || !isString(endDate)) {
+            throw TypeError(`startDate and endDate must be string`);
+        }
+
+        return {
+            startDate,
+            endDate
+        };
+    },
+
+    /**
+     * Finding dateGaps in tickerDataArray
+     * tickerDataArray must be sorted by date
+     * 
+     * @param {any} tickerDataArray 
+     * @param {string} [dateFormat='YYYYMMDD'] 
+     * @returns 
+     */
+    getDateGapsInTickerDataArray(tickerDataArray, dateFormat = 'YYYYMMDD') {
+        const dateGaps = [];
+        // start currentDate from firstDate in tickerDataArray
+        const currDate = moment(tickerDataArray[0].date);
+
+        const startDateGap;
+
+        for (let tickerData of tickerDataArray) {
+
+            if (currDate.diff(tickerData.date) !== 0) {
+                // current item date is not equal to currDate
+                // meaning the current tickerData.date has jumped more than 1 days
+                // so we are entering 'gap range' thus we need to set the currStartDateGap variable
+                // to mark that we are in 'gap range'
+                startDateGap = moment(currDate);
+
+                // keep increasing currDate until we finally catch up with current tickerData.date
+                while (currDate.diff(tickerData.date) !== 0) {
+                    currDate = currDate.add(1, 'days');
+                }
+
+                // after catching up, add the 'gap' to dateGaps from startDateGap until currentDate - 1
+                dateGaps.push(this.dateGapFactory(
+                    startDateGap.format(dateFormat),
+                    currDate.subtract(1, 'days').format(dateFormat)
+                ));
+
+                // resetting the startDateGap variable
+                startDateGap = null;
+            }
+
+            // continue to next iteration, as well as increasing currentDate
+            currDate = currDate.add(1, 'days');
+        }
+
+        return dateGaps;
+    },
+
+    /**
+     * Return Promise containing CacheStatus of selectedTickerData
+     * It basically returns array of tickerData wrapped in CacheStatus object
+     * to know whether the cache is full, partial or empty
+     * 
+     * @param {String} tickerName 
+     * @param {String|moment} fromDate 
+     * @param {String|moment} toDate 
+     * @returns 
+     */
+    getCachedTickerData(tickerName, fromDate, toDate) {
+        return new Promise((resolve, reject) => {
+
+            fromDate = moment(fromDate);
+            toDate = moment(toDate);
+
+            // if fromDate and toDate are not valid
+            if (fromDate.isAfter(toDate, 'days')) {
+                reject(`toDate cannot be before fromDate!`);
+                return;
+            }
+
+            /**
+             * Function to wrap storedTickerDataArr inside CacheStatus object
+             * So aside from returning cached data
+             * it also returns the CacheStatus of requested object
+             * whether it is cached partially, fully, or no cache at all
+             * 
+             * @param {[tickerData]} storedTickerDataArr 
+             */
+            const wrapTickerDataInsideCacheStatus = (storedTickerDataArr) => {
+                // if there is no stored data
+                if (storedTickerDataArr.length === 0) {
+                    return this.cacheStatusFactory(
+                        this.CACHE_AVAILABILITY.NONE
+                    );
+                }
+
+                // if there is stored data
+                const firstStoredDate = storedTickerDataArr[0].date;
+                const lastStoredDate = storedTickerDataArr[storedTickerDataArr.length - 1].date;
+
+                const startDateDiff = Math.abs(fromDate.diff(firstStoredDate, 'days')); // using absolute to remove negative value
+                const endDateDiff = toDate.diff(lastStoredDate, 'days');
+                const totalDaysInRequest = toDate.diff(fromDate, 'days') + 1;
+
+                // if startDate of cache and request same AND
+                // endDate of cache and request same AND
+                // totalStoredData match totalDaysRequested
+                // it means the all the requested data actually fully cached
+                if (startDateDiff === 0 && endDateDiff === 0 && storedTickerDataArr.length === totalDaysInRequest) {
+                    return this.cacheStatusFactory(
+                        this.CACHE_AVAILABILITY.FULL,
+                        storedTickerDataArr,
+                    );
+                }
+
+                // at this point, it means the requested data is partially cached
+                // it can be gap in beginning, end or multiple gaps in middle
+                const dateGaps = [];
+
+                // check beginning gap
+                // add gap from 'fromDate' to 'firstStoredDate - 1'
+                if (startDateDiff !== 0) {
+                    dateGaps.push(this.dateGapFactory(
+                        fromDate,
+                        firstStoredDate.subtract(1, 'days')
+                    ));
+                }
+
+                // check end gap
+                // add gap from 'lastStoredDate + 1' to 'endDate'
+                if (endDateDiff !== 0) {
+                    dateGaps.push(this.dateGapFactory(
+                        lastStoredDate.add(1, 'days'),
+                        endDate
+                    ));
+                }
+
+                // check middle gap
+                // if total startDateDiff and endDateDiff and totalStoredData is still not equal to totalDaysInRequest
+                // it means there is dateGaps in middle of storedDataArr
+                if (startDateDiff + endDateDiff + storedTickerDataArr.length !== totalDaysInRequest) {
+                    const middleGaps = getDateGapsInTickerDataArray(storedTickerDataArr);
+
+                    // add middleGaps to dateGaps
+                    dateGaps.push.apply(dateGaps, middleGaps);
+                }
+
+                // return partial cache status
+                return this.cacheStatusFactory(
+                    this.CACHE_AVAILABILITY.PARTIAL,
+                    storedTickerDataArr,
+                    dateGaps
+                );
+            };
+
+            // make getTickerData request
+            this.getTickerData(tickerName, fromDate, toDate)
+                .then(storedTickerDataArr => {
+                    // wrap the ticker data
+                    const cacheStatusOfStoredTickerData = wrapTickerDataInsideCacheStatus(storedTickerDataArr);
+                    // then pass in the cacheStatus result
+                    resolve(cacheStatusOfStoredTickerData);
+                }).catch(getError => {
+                    reject(getError);
+                });
         });
     },
 
