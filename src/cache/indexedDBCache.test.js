@@ -18,7 +18,7 @@ describe('indexedDBCache test', () => {
         { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
     ];
 
-    const textComparer = (a, b) => {
+    const stockDataComparer = (a, b) => {
         return a.date < b.date ?
             -1 : (a.date > b.date ? 1 : 0);
     };
@@ -57,7 +57,7 @@ describe('indexedDBCache test', () => {
                     return QuandlIndexedDBCache.getTickerObjectStoreKey(stockData);
                 });
                 // sort expectedKeys
-                expectedKeys = expectedKeys.sort(textComparer);
+                expectedKeys = expectedKeys.sort(stockDataComparer);
 
                 console.log('results', results, 'expectedkeys', expectedKeys, 'test', stockDataTest);
                 expect(results).to.deep.equal(expectedKeys);
@@ -71,7 +71,7 @@ describe('indexedDBCache test', () => {
         QuandlIndexedDBCache.getTickerData('AMZN', '20170109', '20170113')
             .then(tickerData => {
                 // sort the data first
-                const sortedAmznData = amznData.sort(textComparer);
+                const sortedAmznData = amznData.sort(stockDataComparer);
 
                 expect(tickerData).to.deep.equal(amznData);
                 done();
