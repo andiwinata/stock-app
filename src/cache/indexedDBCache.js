@@ -1,10 +1,8 @@
-import moment from 'moment';
-
 const stockDataTest = [
     { date: "20170106", ticker: 'MSFT', open: 50, close: 100 },
     { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
     { date: "20170108", ticker: 'MSFT', open: 75, close: 551 },
-    { date: "20170109", ticker: 'AMZN', open: 25, close: 233 },
+    { date: "20170109", ticker: 'AMZN', open: 25, close: 9999 },
     { date: "20170112", ticker: 'AMZN', open: 35, close: 456 },
     { date: "20170113", ticker: 'AMZN', open: 42, close: 12 },
 ];
@@ -50,7 +48,7 @@ const QuandlIndexedDBCache = {
 
                     this._db = event.target.result;
 
-                    const objectStore = this._db.createObjectStore(this.config.objectStoreName, { autoIncrement: true });
+                    const objectStore = this._db.createObjectStore(this.config.objectStoreName);
                     // be careful with short circuiting problem
                     // http://stackoverflow.com/questions/12084177/in-indexeddb-is-there-a-way-to-make-a-sorted-compound-query
                     objectStore.createIndex(this.config.tickerDateIndexName, ['ticker', 'date'], { unique: true });
@@ -73,59 +71,39 @@ const QuandlIndexedDBCache = {
 
     },
 
-    // TODO define what data structure will be passed in
-    putTickerData(tickerData, tickerName, startDate, endDate, dateFormat = 'YYYYMMDD') {
-        return new Promise((resolve, reject) => {
+    getTickerObjectStoreKey(stockData) {
+        return `${stockData.ticker}${stockData.date}`;
+    },
 
-            // check start date end date valiidty
-            if (moment(endDate).isBefore(startDate, 'day')) {
-                console.error(`End date cannot be before the startDate!`);
-                reject(`End date cannot be before the startDate!`);
-                return;
-            }
+    // TODO define what data structure will be passed in
+    putTickerData(tickerData) {
+        return new Promise((resolve, reject) => {
 
             this.getOrCreateQuandlIndexedDB().then((db) => {
                 const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readwrite')
                     .objectStore(this.config.objectStoreName);
 
-                // make a Map() containing ticker data with date as its value
-                const tickerDataByDate = new Map();
-                for (let value of tickerData) {
-                    tickerDataByDate.set(value.date, value);
-                }
-
                 // put all promises for putting data into indexed db
                 const putPromises = [];
 
-                // iterate through startDate and endDate (inclusive)
-                // http://stackoverflow.com/questions/17163809/iterate-through-a-range-of-dates-in-nodejs
-                for (let currDate = moment(startDate); currDate.diff(endDate, 'days') <= 0; currDate.add(1, 'days')) {
-                    const tickerDataOnDate = tickerDataByDate.get(currDate.format(dateFormat));
-                    const emptyValue = {
-                        date: currDate.format(dateFormat),
-                        ticker: tickerName
-                    };
-
-                    // if there is ticker data for current date, use it,
-                    // otherwise just make empty value to be added to database
-                    // so that there will be no missing date gap
-                    const putValue = tickerDataOnDate ? tickerDataOnDate : emptyValue;
-
+                tickerData.forEach((tickerValue) => {
                     putPromises.push(new Promise((resolve, reject) => {
-
-                        const putRequest = tickerObjectStore.put(putValue);
+                        // create ticker key so later on the old cache can be replaced by using same key
+                        const putRequest = tickerObjectStore.put(
+                            tickerValue,
+                            this.getTickerObjectStoreKey(tickerValue)
+                        );
                         putRequest.onsuccess = (event) => {
-                            resolve(putValue);
+                            resolve(event.target.result);
                         };
                         putRequest.onerror = (event) => {
-                            reject(`Fail to put ${putValue} to objectStore. ${putRequest.error}`);
+                            reject(`Fail to put ${tickerValue} to objectStore. ${putRequest.error}`);
                         };
                     }));
-
-                }
+                });
 
                 Promise.all(putPromises).then((results) => {
-                    resolve('Put ticker data is done');
+                    resolve(results);
                 }).catch((error) => {
                     reject(error);
                 });
@@ -173,18 +151,14 @@ const QuandlIndexedDBCache = {
     },
 
     init() {
-        
         this.assignLegacyIndexedDB();
-        this.putTickerData(stockDataTest, 'FB', '20170101', '20170201').then((msg) => {
+        this.putTickerData(stockDataTest).then((msg) => {
             this.testGetTickerData();
-        }).catch((err) => {
-            this.testGetTickerData();
-        });
-
+        })
     },
 
     testGetTickerData() {
-        this.getTickerData('FB', '20170101', '20170109').then((data) => {
+        this.getTickerData('AMZN', '20170101', '20170109').then((data) => {
             console.log('GET TICKER DATA:', data);
         });
     }
