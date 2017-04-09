@@ -315,7 +315,7 @@ const QuandlIndexedDBCache = {
                 // if total startDateDiff and endDateDiff and totalStoredData is still not equal to totalDaysInRequest
                 // it means there is dateGaps in middle of storedDataArr
                 if (startDateDiff + endDateDiff + storedTickerDataArr.length !== totalDaysInRequest) {
-                    const middleGaps = getDateGapsInTickerDataArray(storedTickerDataArr);
+                    const middleGaps = this.getDateGapsInTickerDataArray(storedTickerDataArr);
 
                     // add middleGaps to dateGaps
                     dateGaps.push.apply(dateGaps, middleGaps);
