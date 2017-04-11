@@ -84,6 +84,27 @@ const QuandlIndexedDBCache = {
 
     },
 
+    /**
+     * Get indexedDB for quandl cache
+     * will only try to get, if it does not exist it will reject the promise
+     */
+    getQuandlIndexedDB() {
+        return new Promise((resolve, reject) => {
+            const openReq = indexedDB.open(this.config.dbName);
+
+            openReq.onupgradeneeded = event => {
+                event.target.transaction.abort();
+                reject(`IndexedDB with name ${this.config.dbName} does not exits`);
+            };
+            openReq.onsuccess = event => {
+                resolve(openReq.result);
+            };
+            openReq.error = error => {
+                reject(error);
+            };
+        });
+    },
+
     getTickerObjectStoreKey(stockData) {
         return `${stockData.ticker}${stockData.date}`;
     },
@@ -197,9 +218,9 @@ const QuandlIndexedDBCache = {
     getDateGapsInTickerDataArray(tickerDataArray, dateFormat = 'YYYYMMDD') {
         const dateGaps = [];
         // start currentDate from firstDate in tickerDataArray
-        const currDate = moment(tickerDataArray[0].date);
+        let currDate = moment(tickerDataArray[0].date);
 
-        const startDateGap;
+        let startDateGap;
 
         for (let tickerData of tickerDataArray) {
 
@@ -353,7 +374,22 @@ const QuandlIndexedDBCache = {
         this.getTickerData('AMZN', '20170101', '20170109').then((data) => {
             console.log('GET TICKER DATA:', data);
         });
-    }
+    },
+
+    deleteQuandlIndexedDB() {
+        return new Promise((resolve, reject) => {
+            const delRequest = indexedDB.deleteDatabase(this.config.dbName);
+
+            delRequest.onsuccess = (event) => {
+                resolve(`Successfully deleted database with name: ${this.config.dbName}`);
+            };
+            delRequest.onerror = (error) => {
+                reject(error);
+            };
+
+        });
+    },
+
 };
 
 export default QuandlIndexedDBCache;

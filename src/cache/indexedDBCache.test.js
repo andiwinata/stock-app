@@ -41,6 +41,24 @@ describe('indexedDBCache test', () => {
     after(() => {
         // restore all changes made in sandbox
         sandbox.restore();
+
+        // delete database
+        QuandlIndexedDBCache.deleteQuandlIndexedDB();
+
+        it('delete database correctly', (done) => {
+            QuandlIndexedDBCache.getQuandlIndexedDB()
+                .then(db => {
+                    done(`database is not deleted successfully!`);
+                }).catch(error => {
+                    // check if the error is from indexedDB itself
+                    if (error.prototype instanceof Error) {
+                        done(`indexedDB error: ${error}`);
+                    } else {
+                        // database deleted successfully
+                        done();
+                    }
+                });
+        });
     });
 
     // ------ ORDER OF THESE TESTS MATTERS ------
