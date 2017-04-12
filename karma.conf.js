@@ -2,7 +2,7 @@
 // Generated on Sun Apr 09 2017 14:15:42 GMT+1000 (AUS Eastern Standard Time)
 
 module.exports = function (config) {
-  config.set({
+  let configuration = {
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
@@ -27,7 +27,7 @@ module.exports = function (config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      './test/tests.webpack.js': [ 'webpack', 'sourcemap' ]
+      './test/tests.webpack.js': ['webpack', 'sourcemap']
     },
 
 
@@ -65,6 +65,23 @@ module.exports = function (config) {
 
     // Concurrency level
     // how many browser should be started simultaneous
-    concurrency: Infinity
-  })
+    concurrency: Infinity,
+
+    customLaunchers: {
+
+      // Supporting travis CI
+      // http://stackoverflow.com/questions/19255976/how-to-make-travis-execute-angular-tests-on-chrome-please-set-env-variable-chr
+      // https://swizec.com/blog/how-to-run-javascript-tests-in-chrome-on-travis/swizec/6647
+      Chrome_travis_ci: {
+        base: 'Chrome',
+        flags: ['--no-sandbox']
+      }
+    }
+  };
+
+  if (process.env.TRAVIS) {
+    configuration.browsers = ['Chrome_travis_ci'];
+  }
+
+  config.set(configuration);
 }
