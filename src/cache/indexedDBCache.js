@@ -48,16 +48,12 @@ const QuandlIndexedDBCache = {
             // check if connection to db has not yet created
             if (!this._db) {
                 // open or create database
-                let request = indexedDB.open(this.config.dbName, 1);
+                let openReq = indexedDB.open(this.config.dbName, 1);
 
-                request.onerror = (event) => {
-                    console.error(`Fail to open indexed DB with name ${this.config.dbName}`);
+                openReq.onerror = (event) => {
                     reject(`Fail to open indexed DB with name ${this.config.dbName}`);
                 };
-
-                request.onupgradeneeded = (event) => {
-                    console.log('indexedDB upgrade needed');
-
+                openReq.onupgradeneeded = (event) => {
                     this._db = event.target.result;
 
                     const objectStore = this._db.createObjectStore(this.config.objectStoreName);
@@ -70,12 +66,14 @@ const QuandlIndexedDBCache = {
                         resolve(this._db);
                     };
                 };
-
-                request.onsuccess = (event) => {
-                    console.log('successfully open connection to db');
+                openReq.onsuccess = (event) => {
                     this._db = event.target.result;
                     resolve(this._db);
                 };
+                openReq.onblocked = (error) => {
+                    reject(`opening indexedDB is blocked ${error}`);
+                };
+
             } else {
                 // if connection has been opened, resolve the promise
                 resolve(this._db);
@@ -100,7 +98,10 @@ const QuandlIndexedDBCache = {
                 resolve(openReq.result);
             };
             openReq.error = error => {
-                reject(error);
+                reject(`Error during getting DB with name ${this.config.dbName}`);
+            };
+            openReq.onblocked = error => {
+                reject(`opening indexedDB is blocked ${error}`);
             };
         });
     },
@@ -166,18 +167,15 @@ const QuandlIndexedDBCache = {
                         tickersData.push(cursor.value);
                         cursor.continue();
                     } else {
-                        console.log(`Finish traversing using the cursors`);
                         resolve(tickersData);
                     }
                 };
-
                 cursorReq.onerror = (event) => {
-                    console.error(`There is an error while getting data for tickerName: ${tickerName}\nWith error: \n${cursorReq.error}`);
-                    reject(cursorReq.error);
+                    reject(`There is an error while getting data for tickerName: ${tickerName}\nWith error: \n${cursorReq.error}`);
                 };
 
-            }).catch((getDbError) => {
-                reject(getDbError);
+            }).catch(error => {
+                reject(error);
             });
 
         });
@@ -208,52 +206,6 @@ const QuandlIndexedDBCache = {
     },
 
     /**
-     * Finding dateGaps in tickerDataArray
-     * tickerDataArray must be sorted by date
-     * 
-     * @param {any} tickerDataArray 
-     * @param {string} [dateFormat='YYYYMMDD'] 
-     * @returns 
-     */
-    getDateGapsInTickerDataArray(tickerDataArray, dateFormat = 'YYYYMMDD') {
-        const dateGaps = [];
-        // start currentDate from firstDate in tickerDataArray
-        let currDate = moment(tickerDataArray[0].date);
-
-        let startDateGap;
-
-        for (let tickerData of tickerDataArray) {
-
-            if (currDate.diff(tickerData.date) !== 0) {
-                // current item date is not equal to currDate
-                // meaning the current tickerData.date has jumped more than 1 days
-                // so we are entering 'gap range' thus we need to set the currStartDateGap variable
-                // to mark that we are in 'gap range'
-                startDateGap = moment(currDate);
-
-                // keep increasing currDate until we finally catch up with current tickerData.date
-                while (currDate.diff(tickerData.date) !== 0) {
-                    currDate = currDate.add(1, 'days');
-                }
-
-                // after catching up, add the 'gap' to dateGaps from startDateGap until currentDate - 1
-                dateGaps.push(this.dateGapFactory(
-                    startDateGap.format(dateFormat),
-                    currDate.subtract(1, 'days').format(dateFormat)
-                ));
-
-                // resetting the startDateGap variable
-                startDateGap = null;
-            }
-
-            // continue to next iteration, as well as increasing currentDate
-            currDate = currDate.add(1, 'days');
-        }
-
-        return dateGaps;
-    },
-
-    /**
      * Return Promise containing CacheStatus of selectedTickerData
      * It basically returns array of tickerData wrapped in CacheStatus object
      * to know whether the cache is full, partial or empty
@@ -268,12 +220,59 @@ const QuandlIndexedDBCache = {
 
             fromDate = moment(fromDate);
             toDate = moment(toDate);
+            const dateFormat = 'YYYYMMDD';
 
             // if fromDate and toDate are not valid
             if (fromDate.isAfter(toDate, 'days')) {
                 reject(`toDate cannot be before fromDate!`);
                 return;
             }
+
+            /**
+             * Finding dateGaps in tickerDataArray
+             * tickerDataArray must be sorted by date
+             * the tickerDataArray also must be containing only 1 ticker type
+             * 
+             * @param {any} tickerDataArray 
+             * @param {string} [dateFormat='YYYYMMDD'] 
+             * @returns 
+             */
+            const getDateGapsInTickerDataArray = (tickerDataArray) => {
+                const dateGaps = [];
+                // start currentDate from firstDate in tickerDataArray
+                let currDate = moment(tickerDataArray[0].date);
+                let startDateGap;
+
+                for (let tickerData of tickerDataArray) {
+
+                    if (currDate.diff(tickerData.date) !== 0) {
+                        // current item date is not equal to currDate
+                        // meaning the current tickerData.date has jumped more than 1 days
+                        // so we are entering 'gap range' thus we need to set the currStartDateGap variable
+                        // to mark that we are in 'gap range'
+                        startDateGap = moment(currDate);
+
+                        // keep increasing currDate until we finally catch up with current tickerData.date
+                        while (currDate.diff(tickerData.date) !== 0) {
+                            currDate = currDate.add(1, 'days');
+                        }
+
+                        // after catching up, add the 'gap' to dateGaps from startDateGap until currentDate - 1
+                        dateGaps.push(this.dateGapFactory(
+                            startDateGap.format(dateFormat),
+                            currDate.subtract(1, 'days').format(dateFormat)
+                        ));
+
+                        // resetting the startDateGap variable
+                        startDateGap = null;
+                    }
+
+                    // continue to next iteration, as well as increasing currentDate
+                    currDate = currDate.add(1, 'days');
+                }
+
+                return dateGaps;
+            };
 
             /**
              * Function to wrap storedTickerDataArr inside CacheStatus object
@@ -306,7 +305,7 @@ const QuandlIndexedDBCache = {
                 if (startDateDiff === 0 && endDateDiff === 0 && storedTickerDataArr.length === totalDaysInRequest) {
                     return this.cacheStatusFactory(
                         this.CACHE_AVAILABILITY.FULL,
-                        storedTickerDataArr,
+                        storedTickerDataArr
                     );
                 }
 
@@ -336,7 +335,7 @@ const QuandlIndexedDBCache = {
                 // if total startDateDiff and endDateDiff and totalStoredData is still not equal to totalDaysInRequest
                 // it means there is dateGaps in middle of storedDataArr
                 if (startDateDiff + endDateDiff + storedTickerDataArr.length !== totalDaysInRequest) {
-                    const middleGaps = this.getDateGapsInTickerDataArray(storedTickerDataArr);
+                    const middleGaps = getDateGapsInTickerDataArray(storedTickerDataArr);
 
                     // add middleGaps to dateGaps
                     dateGaps.push.apply(dateGaps, middleGaps);
@@ -351,7 +350,7 @@ const QuandlIndexedDBCache = {
             };
 
             // make getTickerData request
-            this.getTickerData(tickerName, fromDate, toDate)
+            this.getTickerData(tickerName, fromDate.format(dateFormat), toDate.format(dateFormat))
                 .then(storedTickerDataArr => {
                     // wrap the ticker data
                     const cacheStatusOfStoredTickerData = wrapTickerDataInsideCacheStatus(storedTickerDataArr);
@@ -378,13 +377,25 @@ const QuandlIndexedDBCache = {
 
     deleteQuandlIndexedDB() {
         return new Promise((resolve, reject) => {
+
+            // close connection first if exists
+            if (this._db) {
+                this._db.close();
+            }
+
             const delRequest = indexedDB.deleteDatabase(this.config.dbName);
 
             delRequest.onsuccess = (event) => {
                 resolve(`Successfully deleted database with name: ${this.config.dbName}`);
             };
             delRequest.onerror = (error) => {
-                reject(error);
+                reject(`Fail to delete databse with name: ${this.config.dbName}, error: ${error}`);
+            };
+            delRequest.onupgradeneeded = () => {
+                reject(`Fail to delete databse with name: ${this.config.dbName} (upgradeneeded)`);
+            };
+            delRequest.onblocked = () => {
+                reject(`Fail to delete database with name: ${this.config.dbName} (blocked), error: ${delRequest.error}`);
             };
 
         });

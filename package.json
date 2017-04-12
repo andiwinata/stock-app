@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "node ./node_modules/karma/bin/karma start --single-run",
     "test-jsdom": "mocha --require babel-core/register --require ./test/testHelper.js \"./src/**/*@(.test.js|.test.jsx)\" \"./test/**/*@(.test.js|.test.jsx)\"",
     "test-jsdom:watch": "npm run test -- --watch",
     "test-karma": "node ./node_modules/karma/bin/karma start",
