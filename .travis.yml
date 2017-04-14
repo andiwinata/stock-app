@@ -3,6 +3,8 @@ dist: trusty
 language: node_js
 node_js:
     - "7"
+# preparing chrome for karma
+# http://blog.500tech.com/setting-up-travis-ci-to-run-tests-on-latest-google-chrome-version/
 before_install:
     - export CHROME_BIN=chromium-browser
     - export DISPLAY=:99.0

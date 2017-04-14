@@ -19,6 +19,20 @@ describe('indexedDBCache test', () => {
         { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
     ];
 
+    const googData = [
+        { date: "20170101", ticker: 'GOOG', open: 50, close: 100 },
+        { date: "20170102", ticker: 'GOOG', open: 75, close: 551 },
+        { date: "20170103", ticker: 'GOOG', open: 11, close: 312 },
+
+        { date: "20170106", ticker: 'GOOG', open: 11, close: 313 },
+        { date: "20170107", ticker: 'GOOG', open: 12, close: 314 },
+        { date: "20170108", ticker: 'GOOG', open: 13, close: 315 },
+
+        { date: "20170110", ticker: 'GOOG', open: 14, close: 316 },
+        { date: "20170111", ticker: 'GOOG', open: 15, close: 317 },
+        { date: "20170112", ticker: 'GOOG', open: 16, close: 318 },
+    ];
+
     const stockDataComparer = (a, b) => {
         return a.date < b.date ?
             -1 : (a.date > b.date ? 1 : 0);
@@ -48,7 +62,7 @@ describe('indexedDBCache test', () => {
     // ------ ORDER OF THESE TESTS MATTERS ------ TODO!!!!!
 
     it('put data correctly and returning correct SORTED keys', (done) => {
-        const stockDataTest = [...amznData, ...msftData];
+        const stockDataTest = [...amznData, ...msftData, ...googData];
 
         QuandlIndexedDBCache.putTickerData(stockDataTest)
             .then(results => {
@@ -101,6 +115,22 @@ describe('indexedDBCache test', () => {
             }).catch(getCachedError => {
                 done(new Error(`Get cached error: ${getCachedError}`));
             });
+    });
+    
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (after date gap)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170110')
+    });
+
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (before date gap)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170110')
+    });
+
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (1 middle date gap)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170110')
+    });
+
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (1 multiple middledate gaps)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170110')
     });
 
     it('delete database correctly', (done) => {
