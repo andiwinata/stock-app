@@ -1,6 +1,7 @@
 import QuandlIndexedDBCache from './indexedDBCache';
 import { expect } from 'chai';
 import sinon from 'sinon';
+import moment from 'moment';
 
 describe('indexedDBCache test', () => {
     let sandbox;
@@ -38,6 +39,10 @@ describe('indexedDBCache test', () => {
             -1 : (a.date > b.date ? 1 : 0);
     };
 
+    const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) =>
+        (err) =>
+            done(new Error(`${errorMsgPrefix}: ${err}`));
+
     before((done) => {
         // setup sandbox for test
         sandbox = sinon.sandbox.create();
@@ -47,9 +52,7 @@ describe('indexedDBCache test', () => {
                 testDb = db;
                 databaseCleared = false;
                 done();
-            }).catch(err => {
-                done(new Error(`fail to initialize testDB: ${err}`));
-            });
+            }).catch(catchErrorAsync(done, 'Fail to initialize testDB'));
     });
 
     after(() => {
@@ -59,9 +62,9 @@ describe('indexedDBCache test', () => {
         // expect(databaseCleared).to.be.true;
     });
 
-    // ------ ORDER OF THESE TESTS MATTERS ------ TODO!!!!!
+    // ------ ORDER OF THESE TESTS MATTERS ------
 
-    it('put data correctly and returning correct SORTED keys', (done) => {
+    it(`${QuandlIndexedDBCache.putTickerData.name} puts data correctly and returning correct SORTED keys`, (done) => {
         const stockDataTest = [...amznData, ...msftData, ...googData];
 
         QuandlIndexedDBCache.putTickerData(stockDataTest)
@@ -71,16 +74,13 @@ describe('indexedDBCache test', () => {
 
                 let expectedKeys = stockDataTest.map(QuandlIndexedDBCache.getTickerObjectStoreKey);
                 // sort expectedKeys
-                expectedKeys = expectedKeys.sort(stockDataComparer);
-
+                expectedKeys = expectedKeys.sort();
                 expect(results).to.deep.equal(expectedKeys);
                 done();
-            }).catch(putError => {
-                done(new Error(`Put request error: ${putError}`));
-            });
+            }).catch(catchErrorAsync(done, 'Put request error'));
     });
 
-    it('get data correctly and return SORTED data', (done) => {
+    it(`${QuandlIndexedDBCache.getTickerData.name} returns data correctly and return SORTED data`, (done) => {
         QuandlIndexedDBCache.getTickerData('AMZN', '20170109', '20170113')
             .then(tickerData => {
                 // sort the data first
@@ -88,14 +88,12 @@ describe('indexedDBCache test', () => {
 
                 expect(tickerData).to.deep.equal(amznData);
                 done();
-            }).catch(getError => {
-                done(new Error(`Get request error: ${getError}`));
-            });
+            }).catch(catchErrorAsync(done, `Get request error`));
     });
 
     it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns fully cached data correctly`, (done) => {
         QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170108')
-            .then(storedTickerData => {
+            .then(cachedTickerData => {
 
                 const expectedTickerResult = [
                     { date: "20170106", ticker: 'MSFT', open: 50, close: 100 },
@@ -110,27 +108,172 @@ describe('indexedDBCache test', () => {
                     expectedTickerResult
                 );
 
-                expect(storedTickerData).to.deep.equal(expectedResult);
+                expect(cachedTickerData).to.deep.equal(expectedResult);
                 done();
-            }).catch(getCachedError => {
-                done(new Error(`Get cached error: ${getCachedError}`));
-            });
+            }).catch(catchErrorAsync(done, `Get cached error:`));
     });
-    
+
     it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (after date gap)`, (done) => {
         QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170110')
+            .then(cachedTickerData => {
+                // order matters for dategaps
+                const expectedDateGaps = [
+                    QuandlIndexedDBCache.dateGapFactory('20170109', '20170110')
+                ];
+
+                const expectedResult = QuandlIndexedDBCache.cacheStatusFactory(
+                    QuandlIndexedDBCache.CACHE_AVAILABILITY.PARTIAL,
+                    msftData.sort(stockDataComparer),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
     it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (before date gap)`, (done) => {
-        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170110')
+        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20161201', '20170108')
+            .then(cachedTickerData => {
+                // order matters for dategaps
+                const expectedDateGaps = [
+                    QuandlIndexedDBCache.dateGapFactory('20161201', '20170105')
+                ];
+
+                const expectedResult = QuandlIndexedDBCache.cacheStatusFactory(
+                    QuandlIndexedDBCache.CACHE_AVAILABILITY.PARTIAL,
+                    msftData.sort(stockDataComparer),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error`));
+    });
+
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (before and after date gap)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20161201', '20170115')
+            .then(cachedTickerData => {
+                // order matters for dategaps
+                const expectedDateGaps = [
+                    QuandlIndexedDBCache.dateGapFactory('20161201', '20170105'), //before
+                    QuandlIndexedDBCache.dateGapFactory('20170109', '20170115') // after
+                ];
+
+                const expectedResult = QuandlIndexedDBCache.cacheStatusFactory(
+                    QuandlIndexedDBCache.CACHE_AVAILABILITY.PARTIAL,
+                    msftData.sort(stockDataComparer),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
     it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (1 middle date gap)`, (done) => {
-        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170110')
+        QuandlIndexedDBCache.getCachedTickerData('GOOG', '20170101', '20170108')
+            .then(cachedTickerData => {
+                // order matters for dategaps
+                const expectedDateGaps = [
+                    QuandlIndexedDBCache.dateGapFactory('20170104', '20170105')
+                ];
+
+                const expectedResult = QuandlIndexedDBCache.cacheStatusFactory(
+                    QuandlIndexedDBCache.CACHE_AVAILABILITY.PARTIAL,
+                    googData.sort(stockDataComparer).filter(
+                        data => moment(data.date).isBetween('20170101', '20170108', 'days', '[]')
+                    ),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (1 multiple middledate gaps)`, (done) => {
-        QuandlIndexedDBCache.getCachedTickerData('MSFT', '20170106', '20170110')
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (multiple middledate gaps)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('GOOG', '20170101', '20170112')
+            .then(cachedTickerData => {
+                // order matters for dategaps
+                const expectedDateGaps = [
+                    QuandlIndexedDBCache.dateGapFactory('20170104', '20170105'),
+                    QuandlIndexedDBCache.dateGapFactory('20170109', '20170109')
+                ];
+
+                const expectedResult = QuandlIndexedDBCache.cacheStatusFactory(
+                    QuandlIndexedDBCache.CACHE_AVAILABILITY.PARTIAL,
+                    googData.sort(stockDataComparer),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error`));
+    });
+
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - before and middle)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('GOOG', '20161201', '20170112')
+            .then(cachedTickerData => {
+                // order matters for dategaps
+                const expectedDateGaps = [
+                    QuandlIndexedDBCache.dateGapFactory('20161201', '20161231'), // before
+                    QuandlIndexedDBCache.dateGapFactory('20170104', '20170105'), // middle gaps
+                    QuandlIndexedDBCache.dateGapFactory('20170109', '20170109')
+                ];
+
+                const expectedResult = QuandlIndexedDBCache.cacheStatusFactory(
+                    QuandlIndexedDBCache.CACHE_AVAILABILITY.PARTIAL,
+                    googData.sort(stockDataComparer),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error`));
+    });
+
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - after and middle)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('GOOG', '20170101', '20170312')
+            .then(cachedTickerData => {
+                // order matters for dategaps
+                const expectedDateGaps = [
+                    QuandlIndexedDBCache.dateGapFactory('20170113', '20170312'), // after
+                    QuandlIndexedDBCache.dateGapFactory('20170104', '20170105'), // middle gaps
+                    QuandlIndexedDBCache.dateGapFactory('20170109', '20170109')
+                ];
+
+                const expectedResult = QuandlIndexedDBCache.cacheStatusFactory(
+                    QuandlIndexedDBCache.CACHE_AVAILABILITY.PARTIAL,
+                    googData.sort(stockDataComparer),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error`));
+    });
+
+    it(`${QuandlIndexedDBCache.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - everywhere)`, (done) => {
+        QuandlIndexedDBCache.getCachedTickerData('GOOG', '20161201', '20170312')
+            .then(cachedTickerData => {
+                // order matters for dategaps
+                const expectedDateGaps = [
+                    QuandlIndexedDBCache.dateGapFactory('20161201', '20161231'), // before
+                    QuandlIndexedDBCache.dateGapFactory('20170113', '20170312'), // after
+                    QuandlIndexedDBCache.dateGapFactory('20170104', '20170105'), // middle gaps
+                    QuandlIndexedDBCache.dateGapFactory('20170109', '20170109')
+                ];
+
+                const expectedResult = QuandlIndexedDBCache.cacheStatusFactory(
+                    QuandlIndexedDBCache.CACHE_AVAILABILITY.PARTIAL,
+                    googData.sort(stockDataComparer),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
     it('delete database correctly', (done) => {
@@ -154,9 +297,7 @@ describe('indexedDBCache test', () => {
         QuandlIndexedDBCache.deleteQuandlIndexedDB()
             .then(msg => {
                 checkDatabase(done);
-            }).catch(err => {
-                done(`delete database error`, err);
-            });
+            }).catch(catchErrorAsync(done, 'delete database error'));
 
     });
 });

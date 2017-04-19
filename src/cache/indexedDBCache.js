@@ -1,14 +1,5 @@
 import moment from 'moment';
 
-const stockDataTest = [
-    { date: "20170106", ticker: 'MSFT', open: 50, close: 100 },
-    { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
-    { date: "20170108", ticker: 'MSFT', open: 75, close: 551 },
-    { date: "20170109", ticker: 'AMZN', open: 25, close: 9999 },
-    { date: "20170112", ticker: 'AMZN', open: 35, close: 456 },
-    { date: "20170113", ticker: 'AMZN', open: 42, close: 12 },
-];
-
 const isString = (str) => {
     return (typeof str === 'string' || str instanceof String);
 };
@@ -21,9 +12,10 @@ const QuandlIndexedDBCache = {
     },
 
     config: {
-        dbName: "quandlStockCache",
-        objectStoreName: "tickerObjectStore",
-        tickerDateIndexName: 'tickerDate'
+        dbName: 'quandlStockCache',
+        objectStoreName: 'tickerObjectStore',
+        tickerDateIndexName: 'tickerDate',
+        dateFormat: 'YYYYMMDD'
     },
 
     CACHE_AVAILABILITY: {
@@ -137,7 +129,7 @@ const QuandlIndexedDBCache = {
                 });
 
                 Promise.all(putPromises).then((results) => {
-                    resolve(results);
+                    resolve(results.sort());
                 }).catch((error) => {
                     reject(error);
                 });
@@ -220,7 +212,7 @@ const QuandlIndexedDBCache = {
 
             fromDate = moment(fromDate);
             toDate = moment(toDate);
-            const dateFormat = 'YYYYMMDD';
+            const dateFormat = this.config.dateFormat;
 
             // if fromDate and toDate are not valid
             if (fromDate.isAfter(toDate, 'days')) {
@@ -260,7 +252,7 @@ const QuandlIndexedDBCache = {
                         // after catching up, add the 'gap' to dateGaps from startDateGap until currentDate - 1
                         dateGaps.push(this.dateGapFactory(
                             startDateGap.format(dateFormat),
-                            currDate.subtract(1, 'days').format(dateFormat)
+                            moment(currDate).subtract(1, 'days').format(dateFormat)
                         ));
 
                         // resetting the startDateGap variable
@@ -291,8 +283,8 @@ const QuandlIndexedDBCache = {
                 }
 
                 // if there is stored data
-                const firstStoredDate = storedTickerDataArr[0].date;
-                const lastStoredDate = storedTickerDataArr[storedTickerDataArr.length - 1].date;
+                const firstStoredDate = moment(storedTickerDataArr[0].date);
+                const lastStoredDate = moment(storedTickerDataArr[storedTickerDataArr.length - 1].date);
 
                 const startDateDiff = Math.abs(fromDate.diff(firstStoredDate, 'days')); // using absolute to remove negative value
                 const endDateDiff = toDate.diff(lastStoredDate, 'days');
@@ -317,17 +309,17 @@ const QuandlIndexedDBCache = {
                 // add gap from 'fromDate' to 'firstStoredDate - 1'
                 if (startDateDiff !== 0) {
                     dateGaps.push(this.dateGapFactory(
-                        fromDate,
-                        firstStoredDate.subtract(1, 'days')
+                        fromDate.format(dateFormat),
+                        moment(firstStoredDate).subtract(1, 'days').format(dateFormat)
                     ));
                 }
 
                 // check end gap
-                // add gap from 'lastStoredDate + 1' to 'endDate'
+                // add gap from 'lastStoredDate + 1' to 'toDate'
                 if (endDateDiff !== 0) {
                     dateGaps.push(this.dateGapFactory(
-                        lastStoredDate.add(1, 'days'),
-                        endDate
+                        moment(lastStoredDate).add(1, 'days').format(dateFormat),
+                        toDate.format(dateFormat)
                     ));
                 }
 
@@ -364,15 +356,6 @@ const QuandlIndexedDBCache = {
 
     init() {
         this.assignLegacyIndexedDB();
-        this.putTickerData(stockDataTest).then((msg) => {
-            this.testGetTickerData();
-        })
-    },
-
-    testGetTickerData() {
-        this.getTickerData('AMZN', '20170101', '20170109').then((data) => {
-            console.log('GET TICKER DATA:', data);
-        });
     },
 
     deleteQuandlIndexedDB() {
