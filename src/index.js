@@ -10,7 +10,7 @@ import stockAppSaga from './sagas';
 
 import reducer from './reducer';
 import initialState from './initialState';
-import QuandlIndexedDBCache from './cache/indexedDBCache';
+import QuandlIndexedDBCache from './cache/stockIDB';
 
 const IS_PROD = false;
 

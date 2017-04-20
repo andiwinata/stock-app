@@ -4,7 +4,7 @@ const isString = (str) => {
     return (typeof str === 'string' || str instanceof String);
 };
 
-const QuandlIndexedDBCache = {
+const StockIDB = {
     get isIndexedDBExist() {
         const indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 
@@ -29,7 +29,7 @@ const QuandlIndexedDBCache = {
         window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
     },
 
-    getOrCreateQuandlIndexedDB() {
+    getOrCreateStockIDB() {
         return new Promise((resolve, reject) => {
             if (!this.isIndexedDBExist) {
                 window.alert("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
@@ -78,7 +78,7 @@ const QuandlIndexedDBCache = {
      * Get indexedDB for quandl cache
      * will only try to get, if it does not exist it will reject the promise
      */
-    getQuandlIndexedDB() {
+    getStockIDB() {
         return new Promise((resolve, reject) => {
             const openReq = indexedDB.open(this.config.dbName);
 
@@ -105,7 +105,7 @@ const QuandlIndexedDBCache = {
     putTickerData(tickerData) {
         return new Promise((resolve, reject) => {
 
-            this.getOrCreateQuandlIndexedDB().then((db) => {
+            this.getOrCreateStockIDB().then((db) => {
                 const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readwrite')
                     .objectStore(this.config.objectStoreName);
 
@@ -144,7 +144,7 @@ const QuandlIndexedDBCache = {
     getTickerData(tickerName, fromDate, toDate) {
         return new Promise((resolve, reject) => {
 
-            this.getOrCreateQuandlIndexedDB().then((db) => {
+            this.getOrCreateStockIDB().then((db) => {
                 const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readonly')
                     .objectStore(this.config.objectStoreName);
                 const dateIndex = tickerObjectStore.index(this.config.tickerDateIndexName);
@@ -358,7 +358,7 @@ const QuandlIndexedDBCache = {
         this.assignLegacyIndexedDB();
     },
 
-    deleteQuandlIndexedDB() {
+    deleteStockIDB() {
         return new Promise((resolve, reject) => {
 
             // close connection first if exists
@@ -384,6 +384,26 @@ const QuandlIndexedDBCache = {
         });
     },
 
+    /**
+     * Implementing middleware for all functions in StockIDB
+     * inspired by example of redux
+     * http://redux.js.org/docs/advanced/Middleware.html
+     * https://github.com/reactjs/redux/blob/master/src/applyMiddleware.js
+     * 
+     * @param {(requestedFunc) => function(next) {}} middlewares - expect a function getting requested function and return a function to call the requested function
+     * @returns wrappedFunction of the functionName which chains all the middlewares
+     */
+    _applyFunctionMiddleware(functionName, ...middlewares) {
+        middlewares.reverse();
+
+        let wrappedFunc = indexedDB[functionName];
+
+        middlewares.forEach(middleware => {
+            wrappedFunc = middleware(wrappedFunc);
+        });
+
+        return wrappedFunc;
+    }
 };
 
-export default QuandlIndexedDBCache;
+export default StockIDB;
