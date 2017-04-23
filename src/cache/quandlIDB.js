@@ -1,10 +1,10 @@
-import StockIDB from './stockIDB';
+import createStockIDB, { applyMiddleware } from './stockIDB';
 
-const QuandlIDB = {
-    init() {
-        StockIDB.init();
+export default function createQuandlIDB(overrider) {
+    let quandlIDBInstance = null;
 
-        putMiddleware = (next) => (tickerData) => {
+    function _init() {
+        const putMiddleware = (next) => (tickerData) => {
             tickerData.push({ date: "20170109", ticker: 'AMZN', open: -1, close: -1 });
 
             return next(tickerData);
@@ -17,11 +17,21 @@ const QuandlIDB = {
             // });
         };
 
-        StockIDB.applyMiddleware({
+        const overrider = applyMiddleware({
             functionName: 'putTickerData',
             middlewares: putMiddleware
         });
+
+        quandlIDBInstance = createStockIDB(overrider);
+    };
+
+    _init();
+
+    if (overrider) {
+        return overrider(quandlIDBInstance);
     }
+
+    return quandlIDBInstance;
 };
 
 export default QuandlIDB;

@@ -1,9 +1,10 @@
-import StockIDB from './stockIDB';
+import createStockIDB, { applyMiddleware } from './stockIDB';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
 
 describe('indexedDBCache test', () => {
+    const stockIDB = createStockIDB();
     let sandbox;
     let testDb;
     let databaseCleared = false;
@@ -47,7 +48,7 @@ describe('indexedDBCache test', () => {
         // setup sandbox for test
         sandbox = sinon.sandbox.create();
 
-        StockIDB.getOrCreateStockIDB()
+        stockIDB.getOrCreateStockIDB()
             .then((db) => {
                 testDb = db;
                 databaseCleared = false;
@@ -64,15 +65,15 @@ describe('indexedDBCache test', () => {
 
     // ------ ORDER OF THESE TESTS MATTERS ------
 
-    it(`${StockIDB.putTickerData.name} puts data correctly and returning correct SORTED keys`, (done) => {
+    it(`${stockIDB.putTickerData.name} puts data correctly and returning correct SORTED keys`, (done) => {
         const stockDataTest = [...amznData, ...msftData, ...googData];
 
-        StockIDB.putTickerData(stockDataTest)
+        stockIDB.putTickerData(stockDataTest)
             .then(results => {
                 // test length
                 expect(results.length).to.deep.equal(stockDataTest.length);
 
-                let expectedKeys = stockDataTest.map(StockIDB.getTickerObjectStoreKey);
+                let expectedKeys = stockDataTest.map(stockIDB.getTickerObjectStoreKey);
                 // sort expectedKeys
                 expectedKeys = expectedKeys.sort();
                 expect(results).to.deep.equal(expectedKeys);
@@ -80,8 +81,8 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, 'Put request error'));
     });
 
-    it(`${StockIDB.getTickerData.name} returns data correctly and return SORTED data`, (done) => {
-        StockIDB.getTickerData('AMZN', '20170109', '20170113')
+    it(`${stockIDB.getTickerData.name} returns data correctly and return SORTED data`, (done) => {
+        stockIDB.getTickerData('AMZN', '20170109', '20170113')
             .then(tickerData => {
                 // sort the data first
                 const sortedAmznData = amznData.sort(stockDataComparer);
@@ -91,8 +92,8 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get request error`));
     });
 
-    it(`${StockIDB.getTickerData.name} returns data correctly and return SORTED data from CLONE of StockIDB`, (done) => {
-        const clone = Object.assign({}, StockIDB);
+    it(`${stockIDB.getTickerData.name} returns data correctly and return SORTED data from CLONE of StockIDB`, (done) => {
+        const clone = Object.assign({}, stockIDB);
 
         clone.getTickerData('AMZN', '20170109', '20170113')
             .then(tickerData => {
@@ -104,8 +105,8 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get request error`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns fully cached data correctly`, (done) => {
-        StockIDB.getCachedTickerData('MSFT', '20170106', '20170108')
+    it(`${stockIDB.getCachedTickerData.name} returns fully cached data correctly`, (done) => {
+        stockIDB.getCachedTickerData('MSFT', '20170106', '20170108')
             .then(cachedTickerData => {
 
                 const expectedTickerResult = [
@@ -116,8 +117,8 @@ describe('indexedDBCache test', () => {
                 // sort again since indexedDB will sort it
                 expectedTickerResult.sort(stockDataComparer);
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.FULL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.FULL,
                     expectedTickerResult
                 );
 
@@ -126,16 +127,16 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error:`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns partially cached data correctly (after date gap)`, (done) => {
-        StockIDB.getCachedTickerData('MSFT', '20170106', '20170110')
+    it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (after date gap)`, (done) => {
+        stockIDB.getCachedTickerData('MSFT', '20170106', '20170110')
             .then(cachedTickerData => {
                 // order matters for dategaps
                 const expectedDateGaps = [
-                    StockIDB.dateGapFactory('20170109', '20170110')
+                    stockIDB.dateGapFactory('20170109', '20170110')
                 ];
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.PARTIAL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
                     msftData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -145,16 +146,16 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns partially cached data correctly (before date gap)`, (done) => {
-        StockIDB.getCachedTickerData('MSFT', '20161201', '20170108')
+    it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (before date gap)`, (done) => {
+        stockIDB.getCachedTickerData('MSFT', '20161201', '20170108')
             .then(cachedTickerData => {
                 // order matters for dategaps
                 const expectedDateGaps = [
-                    StockIDB.dateGapFactory('20161201', '20170105')
+                    stockIDB.dateGapFactory('20161201', '20170105')
                 ];
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.PARTIAL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
                     msftData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -164,17 +165,17 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns partially cached data correctly (before and after date gap)`, (done) => {
-        StockIDB.getCachedTickerData('MSFT', '20161201', '20170115')
+    it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (before and after date gap)`, (done) => {
+        stockIDB.getCachedTickerData('MSFT', '20161201', '20170115')
             .then(cachedTickerData => {
                 // order matters for dategaps
                 const expectedDateGaps = [
-                    StockIDB.dateGapFactory('20161201', '20170105'), //before
-                    StockIDB.dateGapFactory('20170109', '20170115') // after
+                    stockIDB.dateGapFactory('20161201', '20170105'), //before
+                    stockIDB.dateGapFactory('20170109', '20170115') // after
                 ];
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.PARTIAL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
                     msftData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -184,16 +185,16 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns partially cached data correctly (1 middle date gap)`, (done) => {
-        StockIDB.getCachedTickerData('GOOG', '20170101', '20170108')
+    it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (1 middle date gap)`, (done) => {
+        stockIDB.getCachedTickerData('GOOG', '20170101', '20170108')
             .then(cachedTickerData => {
                 // order matters for dategaps
                 const expectedDateGaps = [
-                    StockIDB.dateGapFactory('20170104', '20170105')
+                    stockIDB.dateGapFactory('20170104', '20170105')
                 ];
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.PARTIAL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer).filter(
                         data => moment(data.date).isBetween('20170101', '20170108', 'days', '[]')
                     ),
@@ -205,17 +206,17 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple middledate gaps)`, (done) => {
-        StockIDB.getCachedTickerData('GOOG', '20170101', '20170112')
+    it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple middledate gaps)`, (done) => {
+        stockIDB.getCachedTickerData('GOOG', '20170101', '20170112')
             .then(cachedTickerData => {
                 // order matters for dategaps
                 const expectedDateGaps = [
-                    StockIDB.dateGapFactory('20170104', '20170105'),
-                    StockIDB.dateGapFactory('20170109', '20170109')
+                    stockIDB.dateGapFactory('20170104', '20170105'),
+                    stockIDB.dateGapFactory('20170109', '20170109')
                 ];
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.PARTIAL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -225,18 +226,18 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - before and middle)`, (done) => {
-        StockIDB.getCachedTickerData('GOOG', '20161201', '20170112')
+    it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - before and middle)`, (done) => {
+        stockIDB.getCachedTickerData('GOOG', '20161201', '20170112')
             .then(cachedTickerData => {
                 // order matters for dategaps
                 const expectedDateGaps = [
-                    StockIDB.dateGapFactory('20161201', '20161231'), // before
-                    StockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
-                    StockIDB.dateGapFactory('20170109', '20170109')
+                    stockIDB.dateGapFactory('20161201', '20161231'), // before
+                    stockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
+                    stockIDB.dateGapFactory('20170109', '20170109')
                 ];
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.PARTIAL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -246,18 +247,18 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - after and middle)`, (done) => {
-        StockIDB.getCachedTickerData('GOOG', '20170101', '20170312')
+    it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - after and middle)`, (done) => {
+        stockIDB.getCachedTickerData('GOOG', '20170101', '20170312')
             .then(cachedTickerData => {
                 // order matters for dategaps
                 const expectedDateGaps = [
-                    StockIDB.dateGapFactory('20170113', '20170312'), // after
-                    StockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
-                    StockIDB.dateGapFactory('20170109', '20170109')
+                    stockIDB.dateGapFactory('20170113', '20170312'), // after
+                    stockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
+                    stockIDB.dateGapFactory('20170109', '20170109')
                 ];
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.PARTIAL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -267,19 +268,19 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`${StockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - everywhere)`, (done) => {
-        StockIDB.getCachedTickerData('GOOG', '20161201', '20170312')
+    it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - everywhere)`, (done) => {
+        stockIDB.getCachedTickerData('GOOG', '20161201', '20170312')
             .then(cachedTickerData => {
                 // order matters for dategaps
                 const expectedDateGaps = [
-                    StockIDB.dateGapFactory('20161201', '20161231'), // before
-                    StockIDB.dateGapFactory('20170113', '20170312'), // after
-                    StockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
-                    StockIDB.dateGapFactory('20170109', '20170109')
+                    stockIDB.dateGapFactory('20161201', '20161231'), // before
+                    stockIDB.dateGapFactory('20170113', '20170312'), // after
+                    stockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
+                    stockIDB.dateGapFactory('20170109', '20170109')
                 ];
 
-                const expectedResult = StockIDB.cacheStatusFactory(
-                    StockIDB.CACHE_AVAILABILITY.PARTIAL,
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -289,9 +290,8 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get cached error`));
     });
 
-    it(`applies 1 middleware correctly`, (done) => {
-        const getTickerDataMiddleware = (next) => (tickerName, fromDate, toDate) => {
-            console.log('test', next);
+    it(`applies 1 middleware correctly for 1 function`, (done) => {
+        const getTickerDataMiddleware = (next) => (tickerName, fromDate, toDate, lol) => {
             tickerName = 'MSFT';
             fromDate = '20150101';
             toDate = '20180101';
@@ -299,37 +299,68 @@ describe('indexedDBCache test', () => {
             return next(tickerName, fromDate, toDate);
         };
 
-        const wrappedStockIDB = StockIDB.applyMiddleware({
+        const overrider = applyMiddleware({
             functionName: 'getTickerData',
             middlewares: getTickerDataMiddleware
         });
 
-        console.log('wrapped', wrappedStockIDB.getTickerData);
-        console.log('wrapped', wrappedStockIDB);
-        const wrap2 = Object.assign({}, StockIDB);
+        const wrappedStockIDB = createStockIDB(overrider);
 
-        wrap2.getTickerData = wrappedStockIDB.getTickerData;
-
-        wrap2.getTickerData('GOOG', '20161201', '20170312')
+        wrappedStockIDB.getTickerData('GOOG', '20161201', '20170312')
             .then(tickerData => {
-                console.log(`middleware tickerdata`, tickerData);
-
                 const expectedResult = [
                     { date: "20170106", ticker: 'MSFT', open: 50, close: 100 },
                     { date: "20170108", ticker: 'MSFT', open: 75, close: 551 },
-                    { date: "20170107", ticker: 'MSFT', open: 11, close: 312 }
+                    { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
                 ];
 
-                expect(tickerData).to.deep.equal(expectedResult);
+                expect(tickerData).to.deep.equal(expectedResult.sort(stockDataComparer));
                 done();
             }).catch(catchErrorAsync(done, 'Middleware getTickerData error'));
+    });
 
+    it(`applies multiple middlewares correctly for 1 function`, (done) => {
+        const getTickerDataMiddleware1 = (next) => (tickerName, fromDate, toDate, lol) => {
+            tickerName = 'GOOG';
+            return next(tickerName, fromDate, toDate);
+        };
+
+        const getTickerDataMiddleware2 = (next) => (tickerName, fromDate, toDate, lol) => {
+            fromDate = '20170107';
+            return next(tickerName, fromDate, toDate);
+        };
+
+        const getTickerDataMiddleware3 = (next) => (tickerName, fromDate, toDate, lol) => {
+            toDate = '20170112';
+            return next(tickerName, fromDate, toDate);
+        };
+
+        const enhancer = applyMiddleware({
+            functionName: 'getTickerData',
+            middlewares: [getTickerDataMiddleware1, getTickerDataMiddleware2, getTickerDataMiddleware3]
+        });
+
+        const wrappedStockIDB = createStockIDB(enhancer);
+
+        wrappedStockIDB.getTickerData('MSFT', '20170102', '20170108')
+            .then(tickerData => {
+                const expectedResult = [
+                    { date: "20170107", ticker: 'GOOG', open: 12, close: 314 },
+                    { date: "20170108", ticker: 'GOOG', open: 13, close: 315 },
+                    { date: "20170110", ticker: 'GOOG', open: 14, close: 316 },
+                    { date: "20170111", ticker: 'GOOG', open: 15, close: 317 },
+                    { date: "20170112", ticker: 'GOOG', open: 16, close: 318 },
+                ];
+
+                expect(tickerData).to.deep.equal(expectedResult.sort(stockDataComparer));
+                done();
+            }).catch(catchErrorAsync(done, 'Middleware getTickerData error'));
     });
 
     it('delete database correctly', (done) => {
 
         // function to check if database deleted
-        const checkDatabase = StockIDB.getStockIDB()
+        const checkDatabase = stockIDB.getStockIDB()
             .then(db => {
                 done(`database is not deleted successfully!`);
             }).catch(error => {
@@ -344,10 +375,9 @@ describe('indexedDBCache test', () => {
             });
 
         // delete database
-        StockIDB.deleteStockIDB()
+        stockIDB.deleteStockIDB()
             .then(msg => {
                 checkDatabase(done);
             }).catch(catchErrorAsync(done, 'delete database error'));
-
     });
 });

@@ -4,63 +4,69 @@ const isString = (str) => {
     return (typeof str === 'string' || str instanceof String);
 };
 
-const StockIDB = {
-    get isIndexedDBExist() {
+export default function createStockIDB(overrider) {
+    function isIndexedDBExist() {
         const indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 
         return !!indexedDB;
-    },
+    };
 
-    config: {
+    const config = {
         dbName: 'quandlStockCache',
         objectStoreName: 'tickerObjectStore',
         tickerDateIndexName: 'tickerDate',
         dateFormat: 'YYYYMMDD'
-    },
+    };
 
-    CACHE_AVAILABILITY: {
+    const CACHE_AVAILABILITY = {
         FULL: 'FULL',
         PARTIAL: 'PARTIAL',
         NONE: 'NONE'
-    },
+    };
 
-    assignLegacyIndexedDB() {
+    let _db = null;
+
+    function _assignLegacyIndexedDB() {
         window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || { READ_WRITE: "readwrite" }; // This line should only be needed if it is needed to support the object's constants for older browsers
         window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
-    },
+    };
 
-    getOrCreateStockIDB() {
+    function _init() {
+        _assignLegacyIndexedDB();
+    };
+
+    function getOrCreateStockIDB() {
         return new Promise((resolve, reject) => {
-            if (!this.isIndexedDBExist) {
+            if (!isIndexedDBExist) {
                 window.alert("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
                 reject("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
                 return;
             }
 
             // check if connection to db has not yet created
-            if (!this._db) {
+            if (!_db) {
                 // open or create database
-                let openReq = indexedDB.open(this.config.dbName, 1);
+                let openReq = indexedDB.open(config.dbName, 1);
 
                 openReq.onerror = (event) => {
-                    reject(`Fail to open indexed DB with name ${this.config.dbName}`);
+                    reject(`Fail to open indexed DB with name ${config.dbName}`);
                 };
                 openReq.onupgradeneeded = (event) => {
-                    this._db = event.target.result;
+                    _db = event.target.result;
 
-                    const objectStore = this._db.createObjectStore(this.config.objectStoreName);
+                    const objectStore = _db.createObjectStore(config.objectStoreName);
                     // create index based on ticker and date
                     // be careful with short circuiting problem
                     // http://stackoverflow.com/questions/12084177/in-indexeddb-is-there-a-way-to-make-a-sorted-compound-query
-                    objectStore.createIndex(this.config.tickerDateIndexName, ['ticker', 'date'], { unique: true });
+                    objectStore.createIndex(config.tickerDateIndexName, ['ticker', 'date'], { unique: true });
 
                     objectStore.transaction.oncomplete = (event) => {
-                        resolve(this._db);
+                        resolve(_db);
                     };
                 };
                 openReq.onsuccess = (event) => {
-                    this._db = event.target.result;
-                    resolve(this._db);
+                    _db = event.target.result;
+                    resolve(_db);
                 };
                 openReq.onblocked = (error) => {
                     reject(`opening indexedDB is blocked ${error}`);
@@ -68,46 +74,46 @@ const StockIDB = {
 
             } else {
                 // if connection has been opened, resolve the promise
-                resolve(this._db);
+                resolve(_db);
             }
         });
 
-    },
+    };
 
     /**
      * Get indexedDB for quandl cache
      * will only try to get, if it does not exist it will reject the promise
      */
-    getStockIDB() {
+    function getStockIDB() {
         return new Promise((resolve, reject) => {
-            const openReq = indexedDB.open(this.config.dbName);
+            const openReq = indexedDB.open(config.dbName);
 
             openReq.onupgradeneeded = event => {
                 event.target.transaction.abort();
-                reject(`IndexedDB with name ${this.config.dbName} does not exits`);
+                reject(`IndexedDB with name ${config.dbName} does not exits`);
             };
             openReq.onsuccess = event => {
                 resolve(openReq.result);
             };
             openReq.error = error => {
-                reject(`Error during getting DB with name ${this.config.dbName}`);
+                reject(`Error during getting DB with name ${config.dbName}`);
             };
             openReq.onblocked = error => {
                 reject(`opening indexedDB is blocked ${error}`);
             };
         });
-    },
+    };
 
-    getTickerObjectStoreKey(stockData) {
+    function getTickerObjectStoreKey(stockData) {
         return `${stockData.ticker}${stockData.date}`;
-    },
+    };
 
-    putTickerData(tickerData) {
+    function putTickerData(tickerData) {
         return new Promise((resolve, reject) => {
 
-            this.getOrCreateStockIDB().then((db) => {
-                const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readwrite')
-                    .objectStore(this.config.objectStoreName);
+            getOrCreateStockIDB().then((db) => {
+                const tickerObjectStore = db.transaction([config.objectStoreName], 'readwrite')
+                    .objectStore(config.objectStoreName);
 
                 // put all promises for putting data into indexed db
                 const putPromises = [];
@@ -117,7 +123,7 @@ const StockIDB = {
                         // create ticker key so later on the old cache can be replaced by using same key
                         const putRequest = tickerObjectStore.put(
                             tickerValue,
-                            this.getTickerObjectStoreKey(tickerValue)
+                            getTickerObjectStoreKey(tickerValue)
                         );
                         putRequest.onsuccess = (event) => {
                             resolve(putRequest.result);
@@ -139,15 +145,14 @@ const StockIDB = {
             });
 
         });
-    },
+    };
 
-    getTickerData(tickerName, fromDate, toDate) {
+    function getTickerData(tickerName, fromDate, toDate) {
         return new Promise((resolve, reject) => {
-            // console.log('getTickerData',this);
-            this.getOrCreateStockIDB().then((db) => {
-                const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readonly')
-                    .objectStore(this.config.objectStoreName);
-                const dateIndex = tickerObjectStore.index(this.config.tickerDateIndexName);
+            getOrCreateStockIDB().then((db) => {
+                const tickerObjectStore = db.transaction([config.objectStoreName], 'readonly')
+                    .objectStore(config.objectStoreName);
+                const dateIndex = tickerObjectStore.index(config.tickerDateIndexName);
                 const dateBoundRange = IDBKeyRange.bound([tickerName, fromDate], [tickerName, toDate]);
 
                 const cursorReq = dateIndex.openCursor(dateBoundRange);
@@ -171,9 +176,9 @@ const StockIDB = {
             });
 
         });
-    },
+    };
 
-    cacheStatusFactory(cacheAvailability = this.CACHE_AVAILABILITY.NONE, cacheData = [], dateGaps = []) {
+    function cacheStatusFactory(cacheAvailability = CACHE_AVAILABILITY.NONE, cacheData = [], dateGaps = []) {
         const validDateGaps = dateGaps.every(gap => 'startDate' in gap && 'endDate' in gap);
         if (!validDateGaps) {
             throw new TypeError(`dateGaps must contain only dateGap object`);
@@ -184,9 +189,9 @@ const StockIDB = {
             cacheData,
             dateGaps
         };
-    },
+    };
 
-    dateGapFactory(startDate, endDate) {
+    function dateGapFactory(startDate, endDate) {
         if (!isString(startDate) || !isString(endDate)) {
             throw TypeError(`startDate and endDate must be string`);
         }
@@ -195,7 +200,7 @@ const StockIDB = {
             startDate,
             endDate
         };
-    },
+    };
 
     /**
      * Return Promise containing CacheStatus of selectedTickerData
@@ -207,12 +212,12 @@ const StockIDB = {
      * @param {String|moment} toDate 
      * @returns 
      */
-    getCachedTickerData(tickerName, fromDate, toDate) {
+    function getCachedTickerData(tickerName, fromDate, toDate) {
         return new Promise((resolve, reject) => {
 
             fromDate = moment(fromDate);
             toDate = moment(toDate);
-            const dateFormat = this.config.dateFormat;
+            const dateFormat = config.dateFormat;
 
             // if fromDate and toDate are not valid
             if (fromDate.isAfter(toDate, 'days')) {
@@ -250,7 +255,7 @@ const StockIDB = {
                         }
 
                         // after catching up, add the 'gap' to dateGaps from startDateGap until currentDate - 1
-                        dateGaps.push(this.dateGapFactory(
+                        dateGaps.push(dateGapFactory(
                             startDateGap.format(dateFormat),
                             moment(currDate).subtract(1, 'days').format(dateFormat)
                         ));
@@ -277,8 +282,8 @@ const StockIDB = {
             const wrapTickerDataInsideCacheStatus = (storedTickerDataArr) => {
                 // if there is no stored data
                 if (storedTickerDataArr.length === 0) {
-                    return this.cacheStatusFactory(
-                        this.CACHE_AVAILABILITY.NONE
+                    return cacheStatusFactory(
+                        CACHE_AVAILABILITY.NONE
                     );
                 }
 
@@ -295,8 +300,8 @@ const StockIDB = {
                 // totalStoredData match totalDaysRequested
                 // it means the all the requested data actually fully cached
                 if (startDateDiff === 0 && endDateDiff === 0 && storedTickerDataArr.length === totalDaysInRequest) {
-                    return this.cacheStatusFactory(
-                        this.CACHE_AVAILABILITY.FULL,
+                    return cacheStatusFactory(
+                        CACHE_AVAILABILITY.FULL,
                         storedTickerDataArr
                     );
                 }
@@ -308,7 +313,7 @@ const StockIDB = {
                 // check beginning gap
                 // add gap from 'fromDate' to 'firstStoredDate - 1'
                 if (startDateDiff !== 0) {
-                    dateGaps.push(this.dateGapFactory(
+                    dateGaps.push(dateGapFactory(
                         fromDate.format(dateFormat),
                         moment(firstStoredDate).subtract(1, 'days').format(dateFormat)
                     ));
@@ -317,7 +322,7 @@ const StockIDB = {
                 // check end gap
                 // add gap from 'lastStoredDate + 1' to 'toDate'
                 if (endDateDiff !== 0) {
-                    dateGaps.push(this.dateGapFactory(
+                    dateGaps.push(dateGapFactory(
                         moment(lastStoredDate).add(1, 'days').format(dateFormat),
                         toDate.format(dateFormat)
                     ));
@@ -334,15 +339,15 @@ const StockIDB = {
                 }
 
                 // return partial cache status
-                return this.cacheStatusFactory(
-                    this.CACHE_AVAILABILITY.PARTIAL,
+                return cacheStatusFactory(
+                    CACHE_AVAILABILITY.PARTIAL,
                     storedTickerDataArr,
                     dateGaps
                 );
             };
 
             // make getTickerData request
-            this.getTickerData(tickerName, fromDate.format(dateFormat), toDate.format(dateFormat))
+            getTickerData(tickerName, fromDate.format(dateFormat), toDate.format(dateFormat))
                 .then(storedTickerDataArr => {
                     // wrap the ticker data
                     const cacheStatusOfStoredTickerData = wrapTickerDataInsideCacheStatus(storedTickerDataArr);
@@ -352,74 +357,91 @@ const StockIDB = {
                     reject(getError);
                 });
         });
-    },
+    };
 
-    init() {
-        if (!this.hasBeenInitialized) {
-            return;
-        }
-
-        this.assignLegacyIndexedDB();
-        this.hasBeenInitialized = true;
-    },
-
-    deleteStockIDB() {
+    function deleteStockIDB() {
         return new Promise((resolve, reject) => {
 
             // close connection first if exists
-            if (this._db) {
-                this._db.close();
+            if (_db) {
+                _db.close();
             }
 
-            const delRequest = indexedDB.deleteDatabase(this.config.dbName);
+            const delRequest = indexedDB.deleteDatabase(config.dbName);
 
             delRequest.onsuccess = (event) => {
-                resolve(`Successfully deleted database with name: ${this.config.dbName}`);
+                resolve(`Successfully deleted database with name: ${config.dbName}`);
             };
             delRequest.onerror = (error) => {
-                reject(`Fail to delete databse with name: ${this.config.dbName}, error: ${error}`);
+                reject(`Fail to delete databse with name: ${config.dbName}, error: ${error}`);
             };
             delRequest.onupgradeneeded = () => {
-                reject(`Fail to delete databse with name: ${this.config.dbName} (upgradeneeded)`);
+                reject(`Fail to delete databse with name: ${config.dbName} (upgradeneeded)`);
             };
             delRequest.onblocked = () => {
-                reject(`Fail to delete database with name: ${this.config.dbName} (blocked), error: ${delRequest.error}`);
+                reject(`Fail to delete database with name: ${config.dbName} (blocked), error: ${delRequest.error}`);
             };
 
         });
-    },
+    };
 
-    /**
-     * Implementing middleware for all functions in StockIDB
-     * inspired by example of redux
-     * http://redux.js.org/docs/advanced/Middleware.html
-     * https://github.com/reactjs/redux/blob/master/src/applyMiddleware.js
-     * 
-     * @param {String} functionName
-     * @param { next => requestedFunctionParam => requestedFunctionReturn } middlewares
-     * @returns wrappedFunction of the functionName which chains all the middlewares
-     */
-    _applyFunctionMiddleware(functionName, ...middlewares) {
-        middlewares.reverse();
+    _init();
 
-        let wrappedFunc = this[functionName];
+    const stockIDBInstance = {
+        isIndexedDBExist,
+        CACHE_AVAILABILITY,
+        config,
+        getOrCreateStockIDB,
+        getStockIDB,
+        getTickerObjectStoreKey,
+        putTickerData,
+        getTickerData,
+        cacheStatusFactory,
+        dateGapFactory,
+        getCachedTickerData,
+        deleteStockIDB
+    };
 
-        middlewares.forEach(middleware => {
-            console.log('middleware', middleware);
-            wrappedFunc = middleware(wrappedFunc);
-        });
-        console.log('apply fun mid', wrappedFunc);
-        return wrappedFunc;
-    },
+    // using overrider/enhancer, inspired by
+    // https://github.com/reactjs/redux/blob/master/src/createStore.js
+    if (overrider) {
+        return overrider(stockIDBInstance);
+    }
 
-    /**
-     * Apply middleware to multiple functions for the stockIDB object
-     * will return a copy of stockIDB object with middlewares applied to requested functions
-     * 
-     * @param {[{functionName: String, middlewares: [functions]}]} middleWareSelectors 
-     * @returns {Object} stockIDB with applied middlewares for some functions
-     */
-    applyMiddleware(middleWareSelectors) {
+    return stockIDBInstance;
+};
+
+
+/**
+ * Implementing middleware for all functions in StockIDB
+ * inspired by example of redux
+ * http://redux.js.org/docs/advanced/Middleware.html
+ * https://github.com/reactjs/redux/blob/master/src/applyMiddleware.js
+ * 
+ * @param {String} functionName
+ * @param { next => requestedFunctionParam => requestedFunctionReturn } middlewares
+ * @returns wrappedFunction of the functionName which chains all the middlewares
+ */
+function _applyFunctionMiddleware(boundObject, functionName, ...middlewares) {
+    middlewares.reverse();
+
+    let wrappedFunc = boundObject[functionName];
+
+    middlewares.forEach(middleware => {
+        wrappedFunc = middleware(wrappedFunc);
+    });
+    return wrappedFunc;
+}
+
+/**
+ * Apply middleware to multiple functions for the stockIDB object
+ * will return a copy of stockIDB object with middlewares applied to requested functions
+ * 
+ * @param {[{functionName: String, middlewares: [functions]}]} middleWareSelectors 
+ * @returns {(boundObject) => stockIDBWithMiddleware} stockIDB with applied middlewares for some functions
+ */
+export function applyMiddleware(middleWareSelectors) {
+    return (boundObject) => {
         if (!Array.isArray(middleWareSelectors)) {
             middleWareSelectors = [middleWareSelectors];
         }
@@ -430,22 +452,19 @@ const StockIDB = {
             if (!('functionName' in middlewareSelector) || !('middlewares' in middlewareSelector)) {
                 throw new Error(`functionName and middlewares must exist in each middleware selector`);
             }
-            // if the middlewares provided is not array, convert to array
+
+            // if the middlewares provided is not an array, convert to array
             if (!Array.isArray(middlewareSelector.middlewares)) {
                 middlewareSelector.middlewares = [middlewareSelector.middlewares];
             }
 
-            overridenFunctions[middlewareSelector.functionName] = this._applyFunctionMiddleware(
+            overridenFunctions[middlewareSelector.functionName] = _applyFunctionMiddleware(
+                boundObject,
                 middlewareSelector.functionName,
                 ...middlewareSelector.middlewares
             );
         });
 
-        return overridenFunctions;
-        var t = Object.assign(this, overridenFunctions);
-        console.log('applyMid', t);
-        return t;
-    }
-};
-
-export default StockIDB;
+        return Object.assign(createStockIDB(), overridenFunctions);
+    };
+}
