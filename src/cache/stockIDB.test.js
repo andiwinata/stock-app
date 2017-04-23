@@ -91,6 +91,19 @@ describe('indexedDBCache test', () => {
             }).catch(catchErrorAsync(done, `Get request error`));
     });
 
+    it(`${StockIDB.getTickerData.name} returns data correctly and return SORTED data from CLONE of StockIDB`, (done) => {
+        const clone = Object.assign({}, StockIDB);
+
+        clone.getTickerData('AMZN', '20170109', '20170113')
+            .then(tickerData => {
+                // sort the data first
+                const sortedAmznData = amznData.sort(stockDataComparer);
+
+                expect(tickerData).to.deep.equal(amznData);
+                done();
+            }).catch(catchErrorAsync(done, `Get request error`));
+    });
+
     it(`${StockIDB.getCachedTickerData.name} returns fully cached data correctly`, (done) => {
         StockIDB.getCachedTickerData('MSFT', '20170106', '20170108')
             .then(cachedTickerData => {
@@ -274,6 +287,43 @@ describe('indexedDBCache test', () => {
                 expect(cachedTickerData).to.deep.equal(expectedResult);
                 done();
             }).catch(catchErrorAsync(done, `Get cached error`));
+    });
+
+    it(`applies 1 middleware correctly`, (done) => {
+        const getTickerDataMiddleware = (next) => (tickerName, fromDate, toDate) => {
+            console.log('test', next);
+            tickerName = 'MSFT';
+            fromDate = '20150101';
+            toDate = '20180101';
+
+            return next(tickerName, fromDate, toDate);
+        };
+
+        const wrappedStockIDB = StockIDB.applyMiddleware({
+            functionName: 'getTickerData',
+            middlewares: getTickerDataMiddleware
+        });
+
+        console.log('wrapped', wrappedStockIDB.getTickerData);
+        console.log('wrapped', wrappedStockIDB);
+        const wrap2 = Object.assign({}, StockIDB);
+
+        wrap2.getTickerData = wrappedStockIDB.getTickerData;
+
+        wrap2.getTickerData('GOOG', '20161201', '20170312')
+            .then(tickerData => {
+                console.log(`middleware tickerdata`, tickerData);
+
+                const expectedResult = [
+                    { date: "20170106", ticker: 'MSFT', open: 50, close: 100 },
+                    { date: "20170108", ticker: 'MSFT', open: 75, close: 551 },
+                    { date: "20170107", ticker: 'MSFT', open: 11, close: 312 }
+                ];
+
+                expect(tickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, 'Middleware getTickerData error'));
+
     });
 
     it('delete database correctly', (done) => {

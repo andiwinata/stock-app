@@ -143,7 +143,7 @@ const StockIDB = {
 
     getTickerData(tickerName, fromDate, toDate) {
         return new Promise((resolve, reject) => {
-
+            // console.log('getTickerData',this);
             this.getOrCreateStockIDB().then((db) => {
                 const tickerObjectStore = db.transaction([this.config.objectStoreName], 'readonly')
                     .objectStore(this.config.objectStoreName);
@@ -355,7 +355,12 @@ const StockIDB = {
     },
 
     init() {
+        if (!this.hasBeenInitialized) {
+            return;
+        }
+
         this.assignLegacyIndexedDB();
+        this.hasBeenInitialized = true;
     },
 
     deleteStockIDB() {
@@ -390,19 +395,56 @@ const StockIDB = {
      * http://redux.js.org/docs/advanced/Middleware.html
      * https://github.com/reactjs/redux/blob/master/src/applyMiddleware.js
      * 
-     * @param {(requestedFunc) => function(next) {}} middlewares - expect a function getting requested function and return a function to call the requested function
+     * @param {String} functionName
+     * @param { next => requestedFunctionParam => requestedFunctionReturn } middlewares
      * @returns wrappedFunction of the functionName which chains all the middlewares
      */
     _applyFunctionMiddleware(functionName, ...middlewares) {
         middlewares.reverse();
 
-        let wrappedFunc = indexedDB[functionName];
+        let wrappedFunc = this[functionName];
 
         middlewares.forEach(middleware => {
+            console.log('middleware', middleware);
             wrappedFunc = middleware(wrappedFunc);
         });
-
+        console.log('apply fun mid', wrappedFunc);
         return wrappedFunc;
+    },
+
+    /**
+     * Apply middleware to multiple functions for the stockIDB object
+     * will return a copy of stockIDB object with middlewares applied to requested functions
+     * 
+     * @param {[{functionName: String, middlewares: [functions]}]} middleWareSelectors 
+     * @returns {Object} stockIDB with applied middlewares for some functions
+     */
+    applyMiddleware(middleWareSelectors) {
+        if (!Array.isArray(middleWareSelectors)) {
+            middleWareSelectors = [middleWareSelectors];
+        }
+
+        const overridenFunctions = {};
+
+        middleWareSelectors.forEach(middlewareSelector => {
+            if (!('functionName' in middlewareSelector) || !('middlewares' in middlewareSelector)) {
+                throw new Error(`functionName and middlewares must exist in each middleware selector`);
+            }
+            // if the middlewares provided is not array, convert to array
+            if (!Array.isArray(middlewareSelector.middlewares)) {
+                middlewareSelector.middlewares = [middlewareSelector.middlewares];
+            }
+
+            overridenFunctions[middlewareSelector.functionName] = this._applyFunctionMiddleware(
+                middlewareSelector.functionName,
+                ...middlewareSelector.middlewares
+            );
+        });
+
+        return overridenFunctions;
+        var t = Object.assign(this, overridenFunctions);
+        console.log('applyMid', t);
+        return t;
     }
 };
 
