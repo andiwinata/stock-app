@@ -40,9 +40,8 @@ describe('indexedDBCache test', () => {
             -1 : (a.date > b.date ? 1 : 0);
     };
 
-    const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) =>
-        (err) =>
-            done(new Error(`${errorMsgPrefix}: ${err}`));
+    const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) =>
+        done(new Error(`${errorMsgPrefix}: ${err}`));
 
     before((done) => {
         // setup sandbox for test
@@ -64,6 +63,7 @@ describe('indexedDBCache test', () => {
     });
 
     // ------ ORDER OF THESE TESTS MATTERS ------
+    // They also share same instance of indexedDB, so all put will be retained until deleted
 
     it(`${stockIDB.putTickerData.name} puts data correctly and returning correct SORTED keys`, (done) => {
         const stockDataTest = [...amznData, ...msftData, ...googData];
@@ -335,12 +335,12 @@ describe('indexedDBCache test', () => {
             return next(tickerName, fromDate, toDate);
         };
 
-        const enhancer = applyMiddleware({
+        const overrider = applyMiddleware({
             functionName: 'getTickerData',
             middlewares: [getTickerDataMiddleware1, getTickerDataMiddleware2, getTickerDataMiddleware3]
         });
 
-        const wrappedStockIDB = createStockIDB(enhancer);
+        const wrappedStockIDB = createStockIDB(overrider);
 
         wrappedStockIDB.getTickerData('MSFT', '20170102', '20170108')
             .then(tickerData => {
@@ -355,6 +355,79 @@ describe('indexedDBCache test', () => {
                 expect(tickerData).to.deep.equal(expectedResult.sort(stockDataComparer));
                 done();
             }).catch(catchErrorAsync(done, 'Middleware getTickerData error'));
+    });
+
+    it(`applies multiple middlewares correctly for multiple functions`, (done) => {
+        const putMiddlewareData = [
+            { date: "20170101", ticker: 'INVALID', open: -1, close: -1 },
+            { date: "20170102", ticker: 'INVALID', open: -1, close: -1 },
+            { date: "20170103", ticker: 'INVALID', open: -1, close: -1 },
+        ];
+
+        const toBeOverridenTestData = [
+            { date: "20170105", ticker: 'TEST', open: 12, close: 314 },
+            { date: "20170106", ticker: 'TEST', open: 13, close: 123 },
+            { date: "20170107", ticker: 'TEST', open: 14, close: 234 },
+            { date: "20170108", ticker: 'TEST', open: 14, close: 234 },
+            { date: "20170109", ticker: 'TEST', open: 14, close: 234 },
+        ];
+
+        const getTickerDataMiddleware1 = (next) => (tickerName, fromDate, toDate, lol) => {
+            tickerName = 'INVALID';
+            return next(tickerName, fromDate, toDate);
+        };
+
+        const getTickerDataMiddleware2 = (next) => (tickerName, fromDate, toDate, lol) => {
+            fromDate = '20170101';
+            return next(tickerName, fromDate, toDate);
+        };
+
+        const getTickerDataMiddleware3 = (next) => (tickerName, fromDate, toDate, lol) => {
+            toDate = '20170103';
+            return next(tickerName, fromDate, toDate);
+        };
+
+        const putTickerDataMiddleware1 = (next) => (tickerData) => {
+            // replace tickerData
+            tickerData = putMiddlewareData;
+            return next(tickerData);
+        };
+
+        const overrider = applyMiddleware([
+            {
+                functionName: 'getTickerData',
+                middlewares: [getTickerDataMiddleware1, getTickerDataMiddleware2, getTickerDataMiddleware3]
+            },
+            {
+                functionName: 'putTickerData',
+                middlewares: putTickerDataMiddleware1
+            }
+        ]);
+
+        const wrappedStockIDB = createStockIDB(overrider);
+
+        const testPutMiddleware = results => {
+            // test length
+            expect(results.length).to.deep.equal(putMiddlewareData.length);
+
+            let expectedKeys = putMiddlewareData.map(stockIDB.getTickerObjectStoreKey);
+            // sort expectedKeys
+            expectedKeys = expectedKeys.sort();
+            expect(results).to.deep.equal(expectedKeys);
+        };
+
+        const testGetMiddleware = tickerData => {
+            expect(tickerData).to.deep.equal(putMiddlewareData.sort(stockDataComparer));
+            done();
+        };
+
+        wrappedStockIDB.putTickerData(toBeOverridenTestData)
+            .then(testPutMiddleware, catchErrorAsync(done, 'Put request error'))
+            .then(() => {
+                return wrappedStockIDB.getTickerData('INVALID', '20160101', '20180101');
+            })
+            .then(testGetMiddleware, catchErrorAsync(done, 'Get request error'))
+            .catch(catchErrorAsync(done, 'Unexpected error using put and get'));
     });
 
     it('delete database correctly', (done) => {
