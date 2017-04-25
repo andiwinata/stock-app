@@ -1,9 +1,9 @@
-import createStockIDB, { applyMiddleware } from './stockIDB';
+import createStockIDB, { applyMiddleware, stockDataComparer } from './stockIDB';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
 
-describe('indexedDBCache test', () => {
+describe('stockIDB test', () => {
     const stockIDB = createStockIDB();
     let sandbox;
     let testDb;
@@ -35,15 +35,25 @@ describe('indexedDBCache test', () => {
         { date: "20170112", ticker: 'GOOG', open: 16, close: 318 },
     ];
 
-    const stockDataComparer = (a, b) => {
-        return a.date < b.date ?
-            -1 : (a.date > b.date ? 1 : 0);
-    };
-
     const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) =>
         done(new Error(`${errorMsgPrefix}: ${err}`));
 
     before((done) => {
+        // make sure there is no other same IDB
+        // const checkDatabase = stockIDB.getStockIDB()
+        //     .then(db => {
+        //         done(`database is not deleted successfully!`);
+        //     }).catch(error => {
+        //         // check if the error is from indexedDB itself
+        //         if (error.prototype instanceof Error) {
+        //             done(`indexedDB error: ${error}`);
+        //         } else {
+        //             // database deleted successfully
+        //         }
+        //     }).then(() => {
+
+        //     });
+
         // setup sandbox for test
         sandbox = sinon.sandbox.create();
 
@@ -431,12 +441,14 @@ describe('indexedDBCache test', () => {
     });
 
     it('delete database correctly', (done) => {
-
-        // function to check if database deleted
-        const checkDatabase = stockIDB.getStockIDB()
+        // delete database
+        stockIDB.deleteStockIDB()
+            .catch(catchErrorAsync(done, 'delete database error'))
+            .then(() => stockIDB.getStockIDB()) // check if database deleted
             .then(db => {
                 done(`database is not deleted successfully!`);
-            }).catch(error => {
+            })
+            .catch(error => {
                 // check if the error is from indexedDB itself
                 if (error.prototype instanceof Error) {
                     done(`indexedDB error: ${error}`);
@@ -446,11 +458,5 @@ describe('indexedDBCache test', () => {
                     done();
                 }
             });
-
-        // delete database
-        stockIDB.deleteStockIDB()
-            .then(msg => {
-                checkDatabase(done);
-            }).catch(catchErrorAsync(done, 'delete database error'));
     });
 });

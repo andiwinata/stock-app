@@ -4,6 +4,11 @@ const isString = (str) => {
     return (typeof str === 'string' || str instanceof String);
 };
 
+export const stockDataComparer = (a, b) => {
+    return a.date < b.date ?
+        -1 : (a.date > b.date ? 1 : 0);
+};
+
 export default function createStockIDB(overrider) {
     function isIndexedDBExist() {
         const indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
@@ -35,6 +40,18 @@ export default function createStockIDB(overrider) {
         _assignLegacyIndexedDB();
     };
 
+    /**
+     * Adding close event when there is a request to delete database
+     * http://stackoverflow.com/questions/11782946/error-when-deleting-indexeddb-database-in-google-chrome-21-problems
+     * 
+     * @param {any} db 
+     */
+    function _addCloseEventToDB(db) {
+        db.onversionchange = (event) => {
+            event.target.close();
+        };
+    }
+
     function getOrCreateStockIDB() {
         return new Promise((resolve, reject) => {
             if (!isIndexedDBExist) {
@@ -53,6 +70,7 @@ export default function createStockIDB(overrider) {
                 };
                 openReq.onupgradeneeded = (event) => {
                     _db = event.target.result;
+                    _addCloseEventToDB(_db);
 
                     const objectStore = _db.createObjectStore(config.objectStoreName);
                     // create index based on ticker and date
@@ -66,6 +84,8 @@ export default function createStockIDB(overrider) {
                 };
                 openReq.onsuccess = (event) => {
                     _db = event.target.result;
+                    _addCloseEventToDB(_db);
+
                     resolve(_db);
                 };
                 openReq.onblocked = (error) => {
@@ -376,14 +396,14 @@ export default function createStockIDB(overrider) {
             delRequest.onsuccess = (event) => {
                 resolve(`Successfully deleted database with name: ${config.dbName}`);
             };
-            delRequest.onerror = (error) => {
-                reject(`Fail to delete databse with name: ${config.dbName}, error: ${error}`);
+            delRequest.onerror = (event) => {
+                reject(`Fail to delete databse with name: ${config.dbName}, error: ${delRequest.error}`);
             };
             delRequest.onupgradeneeded = () => {
                 reject(`Fail to delete databse with name: ${config.dbName} (upgradeneeded)`);
             };
             delRequest.onblocked = () => {
-                reject(`Fail to delete database with name: ${config.dbName} (blocked), error: ${delRequest.error}`);
+                reject(`Fail to delete database with name: ${config.dbName} (blocked)`);
             };
 
         });
