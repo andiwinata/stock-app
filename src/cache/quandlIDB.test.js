@@ -10,6 +10,20 @@ describe('quandlIDB test', () => {
     const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) =>
         done(new Error(`${errorMsgPrefix}: ${err}`));
 
+    const googData = [
+        { date: "20170104", ticker: 'GOOG', open: 50, close: 100 },
+        { date: "20170105", ticker: 'GOOG', open: 75, close: 551 },
+        { date: "20170106", ticker: 'GOOG', open: 11, close: 312 },
+
+        { date: "20170108", ticker: 'GOOG', open: 11, close: 313 },
+        { date: "20170109", ticker: 'GOOG', open: 12, close: 314 },
+        { date: "20170110", ticker: 'GOOG', open: 13, close: 315 },
+
+        { date: "20170115", ticker: 'GOOG', open: 14, close: 316 },
+        { date: "20170116", ticker: 'GOOG', open: 15, close: 317 },
+        { date: "20170117", ticker: 'GOOG', open: 16, close: 318 },
+    ];
+
     const checkStockIDBDoesNotExist = (done) => {
         return quandlIDB.getStockIDB()
             .then(db => {
@@ -55,8 +69,33 @@ describe('quandlIDB test', () => {
     });
 
     it(`${quandlIDB.put} put stockData without dategap`, done => {
+        const startDate = '20170101';
+        const endDate = '20170131';
 
-        done();
+        quandlIDB.putTickerData(googData, startDate, endDate)
+            .then(results => {
+
+                // generate expected date range
+                const expectedDateRange = [];
+                let currDate = moment(startDate);
+
+                while (currDate.diff(endDate, 'days') < 1) {
+                    expectedDateRange.push(currDate.format('YYYYMMDD'));
+                    currDate = currDate.add(1, 'days');
+                }
+
+                // get expected key results
+                const expectedResults = expectedDateRange.map((date) => {
+                    return quandlIDB.getTickerObjectStoreKey({
+                        date,
+                        ticker: 'GOOG'
+                    });
+                });
+
+                expect(results.length).to.equal(expectedDateRange.length);
+                expect(results).to.deep.equal(expectedResults);
+                done();
+            });
     });
 
 });
