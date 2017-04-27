@@ -6,8 +6,6 @@ import moment from 'moment';
 describe('stockIDB test', () => {
     const stockIDB = createStockIDB();
     let sandbox;
-    let testDb;
-    let databaseCleared = false;
 
     const amznData = [
         { date: "20170109", ticker: 'AMZN', open: 25, close: 9999 },
@@ -38,38 +36,47 @@ describe('stockIDB test', () => {
     const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) =>
         done(new Error(`${errorMsgPrefix}: ${err}`));
 
+    const checkStockIDBDoesNotExist = (done) => {
+        return stockIDB.getStockIDB()
+            .then(db => {
+                done(`database is not deleted successfully!`);
+            }).catch(error => {
+                // check if the error is from indexedDB itself
+                if (error.prototype instanceof Error) {
+                    done(`indexedDB error: ${error}`);
+                } else {
+                    // database deleted successfully
+                    console.log('check result: stockIDB does not exist!');
+                }
+            });
+    }
+
     before((done) => {
         // make sure there is no other same IDB
-        // const checkDatabase = stockIDB.getStockIDB()
-        //     .then(db => {
-        //         done(`database is not deleted successfully!`);
-        //     }).catch(error => {
-        //         // check if the error is from indexedDB itself
-        //         if (error.prototype instanceof Error) {
-        //             done(`indexedDB error: ${error}`);
-        //         } else {
-        //             // database deleted successfully
-        //         }
-        //     }).then(() => {
-
-        //     });
-
-        // setup sandbox for test
-        sandbox = sinon.sandbox.create();
-
-        stockIDB.getOrCreateStockIDB()
+        checkStockIDBDoesNotExist(done)
+            .then(() => {
+                // setup sandbox for test
+                sandbox = sinon.sandbox.create();
+                // create database
+                return stockIDB.getOrCreateStockIDB();
+            })
             .then((db) => {
-                testDb = db;
-                databaseCleared = false;
                 done();
-            }).catch(catchErrorAsync(done, 'Fail to initialize testDB'));
+            })
+            .catch(catchErrorAsync(done, 'Fail to initialize testDB'));
     });
 
-    after(() => {
-        // restore all changes made in sandbox
-        sandbox.restore();
-        // and expect the database has been cleared in the end of the test
-        // expect(databaseCleared).to.be.true;
+    after((done) => {
+        // delete idb after
+        stockIDB.deleteStockIDB()
+            .catch(catchErrorAsync(done, 'delete database error'))
+            // expect the database has been cleared in the end of the test
+            .then(() => checkStockIDBDoesNotExist(done))
+            .then(() => {
+                // restore all changes made in sandbox
+                sandbox.restore();
+                done();
+            });
     });
 
     // ------ ORDER OF THESE TESTS MATTERS ------
@@ -454,7 +461,6 @@ describe('stockIDB test', () => {
                     done(`indexedDB error: ${error}`);
                 } else {
                     // database deleted successfully
-                    databaseCleared = true;
                     done();
                 }
             });
