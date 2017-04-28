@@ -6,6 +6,17 @@ export default function createQuandlIDB(overrider) {
 
     function _init() {
 
+        const createEmptyTickerData = (ticker, date) => {
+            return {
+                ticker,
+                date,
+                open: -1,
+                close: -1
+            };
+        };
+
+        const isNotEmptyTickerData = tickerData => tickerData.open != -1 && tickerData.close != -1;
+
         /**
          * Trying to fill in dateGaps from tickerData, based on startDate and endDate
          * fill empty tickerData on corresponding date with -1 value
@@ -13,7 +24,7 @@ export default function createQuandlIDB(overrider) {
          * 
          * @param {*} next 
          */
-        const putMiddleware = (next) => (tickerData, startDate, endDate, dateFormat = 'YYYYMMDD') => {
+        const putTickerDataMiddleware = (next) => (tickerData, startDate, endDate, dateFormat = 'YYYYMMDD') => {
             if (!Array.isArray(tickerData)) {
                 return next(tickerData);
             } else if (tickerData.length === 1) {
@@ -32,15 +43,6 @@ export default function createQuandlIDB(overrider) {
 
             // set the default tickerName to do validation checking later on
             const tickerName = tickerData[0].ticker;
-
-            const createEmptyTickerData = (ticker, date) => {
-                return {
-                    ticker,
-                    date,
-                    open: -1,
-                    close: -1
-                };
-            };
 
             // iterate through startDate and endDate (inclusive)
             // http://stackoverflow.com/questions/17163809/iterate-through-a-range-of-dates-in-nodejs
@@ -80,10 +82,25 @@ export default function createQuandlIDB(overrider) {
             return next(filledTickerData);
         };
 
-        const overrider = applyMiddleware({
-            functionName: 'putTickerData',
-            middlewares: putMiddleware
-        });
+        const getCachedTickerDataMiddleware = (next) => (tickerName, fromDate, toDate) => {
+            return next(tickerName, fromDate, toDate)
+                .then(cachedTickerData => {
+                    // remove empty data inserted by putTickerDataMiddleware
+                    cachedTickerData.cacheData = cachedTickerData.cacheData.filter(isNotEmptyTickerData);
+                    return cachedTickerData;
+                });
+        };
+
+        const overrider = applyMiddleware([
+            {
+                functionName: 'putTickerData',
+                middlewares: putTickerDataMiddleware
+            },
+            {
+                functionName: 'getCachedTickerData',
+                middlewares: getCachedTickerDataMiddleware
+            }
+        ]);
 
         quandlIDBInstance = createStockIDB(overrider);
     };

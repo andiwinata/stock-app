@@ -238,7 +238,7 @@ export default function createStockIDB(overrider) {
      */
     function getCachedTickerData(tickerName, fromDate, toDate) {
         return new Promise((resolve, reject) => {
-
+            
             fromDate = moment(fromDate);
             toDate = moment(toDate);
             const dateFormat = config.dateFormat;

@@ -2,6 +2,7 @@ import createQuandlIDB from './quandlIDB';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
+import { stockDataComparer } from './stockIDB';
 
 describe('quandlIDB test', () => {
     const quandlIDB = createQuandlIDB();
@@ -51,7 +52,7 @@ describe('quandlIDB test', () => {
             .then((db) => {
                 done();
             })
-            .catch(catchErrorAsync(done, 'Fail to initialize testDB'));;
+            .catch(catchErrorAsync(done, 'Fail to initialize testDB'));
 
     });
 
@@ -68,7 +69,7 @@ describe('quandlIDB test', () => {
             });
     });
 
-    it(`${quandlIDB.put} put stockData without dategap`, done => {
+    it(`${quandlIDB.putTickerData.name} put stockData without dategap`, done => {
         const startDate = '20170101';
         const endDate = '20170131';
 
@@ -95,7 +96,21 @@ describe('quandlIDB test', () => {
                 expect(results.length).to.equal(expectedDateRange.length);
                 expect(results).to.deep.equal(expectedResults);
                 done();
-            });
+            })
+            .catch(catchErrorAsync(done, 'Fail to putTickerData'));
     });
 
+    it(`${quandlIDB.getCachedTickerData.name} return all NOT-empty ticker data`, done => {
+        quandlIDB.getCachedTickerData('GOOG', '20170101', '20170131')
+            .then(cachedTickerData => {
+                const expectedResults = quandlIDB.cacheStatusFactory(
+                    quandlIDB.CACHE_AVAILABILITY.FULL,
+                    googData.sort(stockDataComparer)
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResults);
+                done();
+            })
+            .catch(catchErrorAsync(done, 'Fail to getCachedTickerData'));
+    });
 });

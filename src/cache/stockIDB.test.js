@@ -36,7 +36,7 @@ describe('stockIDB test', () => {
     const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) =>
         done(new Error(`${errorMsgPrefix}: ${err}`));
 
-    const checkStockIDBDoesNotExist = (done) => {
+    const testStockIDBDoesNotExist = (done) => {
         return stockIDB.getStockIDB()
             .then(db => {
                 done(`database is not deleted successfully!`);
@@ -53,7 +53,7 @@ describe('stockIDB test', () => {
 
     before((done) => {
         // make sure there is no other same IDB
-        checkStockIDBDoesNotExist(done)
+        testStockIDBDoesNotExist(done)
             .then(() => {
                 // setup sandbox for test
                 sandbox = sinon.sandbox.create();
@@ -71,7 +71,7 @@ describe('stockIDB test', () => {
         stockIDB.deleteStockIDB()
             .catch(catchErrorAsync(done, 'delete database error'))
             // expect the database has been cleared in the end of the test
-            .then(() => checkStockIDBDoesNotExist(done))
+            .then(() => testStockIDBDoesNotExist(done))
             .then(() => {
                 // restore all changes made in sandbox
                 sandbox.restore();
