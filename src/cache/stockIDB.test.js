@@ -33,8 +33,11 @@ describe('stockIDB test', () => {
         { date: "20170112", ticker: 'GOOG', open: 16, close: 318 },
     ];
 
-    const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) =>
-        done(new Error(`${errorMsgPrefix}: ${err}`));
+    const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) => {
+        const errorStr = `${errorMsgPrefix}: ${err}`;
+        done(new Error(errorStr));
+        return Promise.reject(errorStr);
+    };
 
     const testStockIDBDoesNotExist = (done) => {
         return stockIDB.getStockIDB()

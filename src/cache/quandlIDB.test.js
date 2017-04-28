@@ -8,8 +8,11 @@ describe('quandlIDB test', () => {
     const quandlIDB = createQuandlIDB();
     let sandbox;
 
-    const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) =>
-        done(new Error(`${errorMsgPrefix}: ${err}`));
+    const catchErrorAsync = (done, errorMsgPrefix = `Catch error`) => (err) => {
+        const errorStr = `${errorMsgPrefix}: ${err}`;
+        done(new Error(errorStr));
+        return Promise.reject(errorStr);
+    };
 
     const googData = [
         { date: "20170104", ticker: 'GOOG', open: 50, close: 100 },
