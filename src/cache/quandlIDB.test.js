@@ -28,6 +28,16 @@ describe('quandlIDB test', () => {
         { date: "20170117", ticker: 'GOOG', open: 16, close: 318 },
     ];
 
+    const msftData = [
+        { date: "20170106", ticker: 'MSFT', open: 50, close: 100 },
+        { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
+        { date: "20170108", ticker: 'MSFT', open: 75, close: 551 },
+
+        { date: "20170115", ticker: 'MSFT', open: 76, close: 242 },
+        { date: "20170116", ticker: 'MSFT', open: 77, close: 24 },
+        { date: "20170117", ticker: 'MSFT', open: 87, close: 75 },
+    ];
+
     const checkStockIDBDoesNotExist = (done) => {
         return quandlIDB.getStockIDB()
             .then(db => {
@@ -100,7 +110,7 @@ describe('quandlIDB test', () => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             })
-            .catch(catchErrorAsync(done, 'Fail to putTickerData'));
+            .catch(catchErrorAsync(done, `Fail to ${quandlIDB.putTickerData.name}`));
     });
 
     it(`${quandlIDB.getCachedTickerData.name} return all NOT-empty ticker data`, done => {
@@ -114,6 +124,58 @@ describe('quandlIDB test', () => {
                 expect(cachedTickerData).to.deep.equal(expectedResults);
                 done();
             })
-            .catch(catchErrorAsync(done, 'Fail to getCachedTickerData'));
+            .catch(catchErrorAsync(done, `Fail to ${quandlIDB.getCachedTickerData.name}`));
+    });
+
+    it(`${quandlIDB.getCachedTickerData.name} and ${quandlIDB.putTickerData.name} works properly`, done => {
+        const startDate = '20170103';
+        const endDate = '20170131';
+
+        const startDate2 = '20170106';
+        const endDate2 = '20170115';
+
+        quandlIDB.putTickerData(msftData, startDate, endDate)
+            // test put middleware
+            .then(results => {
+
+                // generate expected date range
+                const expectedDateRange = [];
+                let currDate = moment(startDate);
+
+                while (currDate.diff(endDate, 'days') < 1) {
+                    expectedDateRange.push(currDate.format('YYYYMMDD'));
+                    currDate = currDate.add(1, 'days');
+                }
+
+                // get expected key results
+                const expectedResults = expectedDateRange.map((date) => {
+                    return quandlIDB.getTickerObjectStoreKey({
+                        date,
+                        ticker: 'MSFT'
+                    });
+                });
+
+                expect(results.length).to.equal(expectedDateRange.length);
+                expect(results).to.deep.equal(expectedResults);
+            })
+            .catch(catchErrorAsync(done, `Fail to ${quandlIDB.putTickerData.name}`))
+            // test get middleware
+            .then(() => {
+                return quandlIDB.getCachedTickerData('MSFT', startDate2, endDate2);
+            })
+            .then(cachedTickerData => {
+                const filteredMsftData = msftData.filter(msftData => {
+                    return moment(msftData.date).isBetween(startDate2, endDate2, 'days', '[]');
+                });
+
+                const expectedResults = quandlIDB.cacheStatusFactory(
+                    quandlIDB.CACHE_AVAILABILITY.FULL,
+                    filteredMsftData.sort(stockDataComparer)
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResults);
+                done();
+            })
+            .catch(catchErrorAsync(done, `Fail to ${quandlIDB.getCachedTickerData.name}`));
     });
 });

@@ -450,22 +450,4 @@ describe('stockIDB test', () => {
             .catch(catchErrorAsync(done, 'Unexpected error using put and get'));
     });
 
-    it('delete database correctly', (done) => {
-        // delete database
-        stockIDB.deleteStockIDB()
-            .catch(catchErrorAsync(done, 'delete database error'))
-            .then(() => stockIDB.getStockIDB()) // check if database deleted
-            .then(db => {
-                done(`database is not deleted successfully!`);
-            })
-            .catch(error => {
-                // check if the error is from indexedDB itself
-                if (error.prototype instanceof Error) {
-                    done(`indexedDB error: ${error}`);
-                } else {
-                    // database deleted successfully
-                    done();
-                }
-            });
-    });
 });

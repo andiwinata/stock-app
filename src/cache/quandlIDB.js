@@ -1,10 +1,13 @@
-import createStockIDB, { applyMiddleware, stockDataComparer } from './stockIDB';
+import createStockIDB, { applyMiddleware, stockDataComparer, defaultConfig } from './stockIDB';
 import moment from 'moment';
 
 export default function createQuandlIDB(overrider) {
     let quandlIDBInstance = null;
 
     function _init() {
+
+        // make custom config, even though now it is just the same as default config
+        const quandlIDBConfig = Object.assign({}, defaultConfig);
 
         const createEmptyTickerData = (ticker, date) => {
             return {
@@ -24,12 +27,14 @@ export default function createQuandlIDB(overrider) {
          * 
          * @param {*} next 
          */
-        const putTickerDataMiddleware = (next) => (tickerData, startDate, endDate, dateFormat = 'YYYYMMDD') => {
+        const putTickerDataMiddleware = (next) => (tickerData, startDate, endDate) => { // DATE FORMAT TO REFACTOR USING CONFIG OBJECT!
             if (!Array.isArray(tickerData)) {
                 return next(tickerData);
             } else if (tickerData.length === 1) {
                 return next(tickerData);
             }
+
+            const dateFormat = quandlIDBConfig.dateFormat;
 
             // sort first
             tickerData.sort(stockDataComparer);
@@ -102,7 +107,7 @@ export default function createQuandlIDB(overrider) {
             }
         ]);
 
-        quandlIDBInstance = createStockIDB(overrider);
+        quandlIDBInstance = createStockIDB(overrider, quandlIDBConfig);
     };
 
     _init();

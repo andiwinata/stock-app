@@ -9,18 +9,18 @@ export const stockDataComparer = (a, b) => {
         -1 : (a.date > b.date ? 1 : 0);
 };
 
-export default function createStockIDB(overrider) {
+export const defaultConfig = {
+    dbName: 'quandlStockCache',
+    objectStoreName: 'tickerObjectStore',
+    tickerDateIndexName: 'tickerDate',
+    dateFormat: 'YYYYMMDD'
+};
+
+export default function createStockIDB(overrider, config = defaultConfig) {
     function isIndexedDBExist() {
         const indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 
         return !!indexedDB;
-    };
-
-    const config = {
-        dbName: 'quandlStockCache',
-        objectStoreName: 'tickerObjectStore',
-        tickerDateIndexName: 'tickerDate',
-        dateFormat: 'YYYYMMDD'
     };
 
     const CACHE_AVAILABILITY = {
@@ -238,7 +238,7 @@ export default function createStockIDB(overrider) {
      */
     function getCachedTickerData(tickerName, fromDate, toDate) {
         return new Promise((resolve, reject) => {
-            
+
             fromDate = moment(fromDate);
             toDate = moment(toDate);
             const dateFormat = config.dateFormat;
