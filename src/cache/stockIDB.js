@@ -9,6 +9,8 @@ export const stockDataComparer = (a, b) => {
         -1 : (a.date > b.date ? 1 : 0);
 };
 
+export const dateGapComparer = (gap1, gap2) => moment(gap1.startDate).diff(gap2.startDate, 'days');
+
 export const defaultConfig = {
     dbName: 'quandlStockCache',
     objectStoreName: 'tickerObjectStore',
@@ -255,7 +257,6 @@ export default function createStockIDB(overrider, config = defaultConfig) {
              * the tickerDataArray also must be containing only 1 ticker type
              * 
              * @param {any} tickerDataArray 
-             * @param {string} [dateFormat='YYYYMMDD'] 
              * @returns 
              */
             const getDateGapsInTickerDataArray = (tickerDataArray) => {
@@ -361,6 +362,9 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                     // add middleGaps to dateGaps
                     dateGaps.push.apply(dateGaps, middleGaps);
                 }
+
+                // sort dateGaps
+                dateGaps.sort(dateGapComparer);
 
                 // return partial cache status
                 return cacheStatusFactory(

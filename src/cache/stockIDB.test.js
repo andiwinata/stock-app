@@ -1,4 +1,4 @@
-import createStockIDB, { applyMiddleware, stockDataComparer } from './stockIDB';
+import createStockIDB, { applyMiddleware, stockDataComparer, dateGapComparer } from './stockIDB';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
@@ -150,10 +150,9 @@ describe('stockIDB test', () => {
     it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (after date gap)`, (done) => {
         stockIDB.getCachedTickerData('MSFT', '20170106', '20170110')
             .then(cachedTickerData => {
-                // order matters for dategaps
                 const expectedDateGaps = [
                     stockIDB.dateGapFactory('20170109', '20170110')
-                ];
+                ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
                     stockIDB.CACHE_AVAILABILITY.PARTIAL,
@@ -169,10 +168,9 @@ describe('stockIDB test', () => {
     it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (before date gap)`, (done) => {
         stockIDB.getCachedTickerData('MSFT', '20161201', '20170108')
             .then(cachedTickerData => {
-                // order matters for dategaps
                 const expectedDateGaps = [
                     stockIDB.dateGapFactory('20161201', '20170105')
-                ];
+                ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
                     stockIDB.CACHE_AVAILABILITY.PARTIAL,
@@ -188,11 +186,10 @@ describe('stockIDB test', () => {
     it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (before and after date gap)`, (done) => {
         stockIDB.getCachedTickerData('MSFT', '20161201', '20170115')
             .then(cachedTickerData => {
-                // order matters for dategaps
                 const expectedDateGaps = [
                     stockIDB.dateGapFactory('20161201', '20170105'), //before
                     stockIDB.dateGapFactory('20170109', '20170115') // after
-                ];
+                ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
                     stockIDB.CACHE_AVAILABILITY.PARTIAL,
@@ -208,7 +205,6 @@ describe('stockIDB test', () => {
     it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (1 middle date gap)`, (done) => {
         stockIDB.getCachedTickerData('GOOG', '20170101', '20170108')
             .then(cachedTickerData => {
-                // order matters for dategaps
                 const expectedDateGaps = [
                     stockIDB.dateGapFactory('20170104', '20170105')
                 ];
@@ -229,11 +225,10 @@ describe('stockIDB test', () => {
     it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple middledate gaps)`, (done) => {
         stockIDB.getCachedTickerData('GOOG', '20170101', '20170112')
             .then(cachedTickerData => {
-                // order matters for dategaps
                 const expectedDateGaps = [
                     stockIDB.dateGapFactory('20170104', '20170105'),
                     stockIDB.dateGapFactory('20170109', '20170109')
-                ];
+                ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
                     stockIDB.CACHE_AVAILABILITY.PARTIAL,
@@ -249,12 +244,11 @@ describe('stockIDB test', () => {
     it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - before and middle)`, (done) => {
         stockIDB.getCachedTickerData('GOOG', '20161201', '20170112')
             .then(cachedTickerData => {
-                // order matters for dategaps
                 const expectedDateGaps = [
                     stockIDB.dateGapFactory('20161201', '20161231'), // before
                     stockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
                     stockIDB.dateGapFactory('20170109', '20170109')
-                ];
+                ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
                     stockIDB.CACHE_AVAILABILITY.PARTIAL,
@@ -270,12 +264,11 @@ describe('stockIDB test', () => {
     it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - after and middle)`, (done) => {
         stockIDB.getCachedTickerData('GOOG', '20170101', '20170312')
             .then(cachedTickerData => {
-                // order matters for dategaps
                 const expectedDateGaps = [
                     stockIDB.dateGapFactory('20170113', '20170312'), // after
                     stockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
                     stockIDB.dateGapFactory('20170109', '20170109')
-                ];
+                ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
                     stockIDB.CACHE_AVAILABILITY.PARTIAL,
@@ -291,13 +284,12 @@ describe('stockIDB test', () => {
     it(`${stockIDB.getCachedTickerData.name} returns partially cached data correctly (multiple date gaps - everywhere)`, (done) => {
         stockIDB.getCachedTickerData('GOOG', '20161201', '20170312')
             .then(cachedTickerData => {
-                // order matters for dategaps
                 const expectedDateGaps = [
                     stockIDB.dateGapFactory('20161201', '20161231'), // before
                     stockIDB.dateGapFactory('20170113', '20170312'), // after
                     stockIDB.dateGapFactory('20170104', '20170105'), // middle gaps
                     stockIDB.dateGapFactory('20170109', '20170109')
-                ];
+                ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
                     stockIDB.CACHE_AVAILABILITY.PARTIAL,
