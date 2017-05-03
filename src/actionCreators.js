@@ -8,7 +8,7 @@ export function selectedTickerChanged(selectedTickers) {
     return {
         type: actionTypes.SELECTED_TICKER_CHANGED,
         selectedTickers
-    }
+    };
 }
 
 export function selectedDateChanged(selectedDate) {
@@ -19,7 +19,7 @@ export function selectedDateChanged(selectedDate) {
     return {
         type: actionTypes.SELECTED_DATE_CHANGED,
         selectedDate
-    }
+    };
 }
 
 export function tickerDataReceived(receivedTickerData, receivedTickers, receivedDate) {
@@ -28,5 +28,5 @@ export function tickerDataReceived(receivedTickerData, receivedTickers, received
         receivedTickerData,
         receivedTickers,
         receivedDate
-    }
+    };
 }

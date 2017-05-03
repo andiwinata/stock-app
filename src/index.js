@@ -10,6 +10,7 @@ import stockAppSaga from './sagas';
 
 import reducer from './reducer';
 import initialState from './initialState';
+import createQuandlIDB from './cache/quandlIDB';
 
 const IS_PROD = false;
 
@@ -24,6 +25,8 @@ const store = IS_PROD ?
         initialState,
         composeEnhancers(applyMiddleware(sagaMiddleware))
     );
+
+createQuandlIDB();
 
 sagaMiddleware.run(stockAppSaga)
 
