@@ -83,6 +83,8 @@ describe('stockIDB test', () => {
     });
 
     // ------ ORDER OF THESE TESTS MATTERS ------
+    // because of put(), the order of get() does not really matter
+    // not sure if this is the correct approach, this causes unit test dependant to others
     // They also share same instance of indexedDB, so all put will be retained until deleted
 
     it(`${stockIDB.putTickerData.name} puts data correctly and returning correct SORTED keys`, (done) => {

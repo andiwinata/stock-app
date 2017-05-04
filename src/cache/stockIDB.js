@@ -54,6 +54,19 @@ export default function createStockIDB(overrider, config = defaultConfig) {
         };
     }
 
+    function getConfig(key) {
+        return config[key];
+    }
+
+    function setConfig(key, value) {
+        if (key in config) {
+            config[key] = value;
+            return true;
+        }
+
+        return false;
+    }
+
     function getOrCreateStockIDB() {
         return new Promise((resolve, reject) => {
             if (!isIndexedDBExist) {
@@ -418,7 +431,8 @@ export default function createStockIDB(overrider, config = defaultConfig) {
     const stockIDBInstance = {
         isIndexedDBExist,
         CACHE_AVAILABILITY,
-        config,
+        getConfig,
+        setConfig,
         getOrCreateStockIDB,
         getStockIDB,
         getTickerObjectStoreKey,

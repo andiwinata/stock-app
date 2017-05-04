@@ -7,6 +7,8 @@ import { processQuandlJson } from './api/tickerDataProcessor';
 import { determineCachedStockDataStatus, CACHE_AVAILABILITY } from './storeFunctions';
 import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses } from './api/requestFunctions';
 
+import { quandlIDB } from './index';
+
 import merge from 'lodash.merge';
 
 export const getApiKey = (state) => state.apiKey;
@@ -34,8 +36,10 @@ function* selectedInfoChanged(action) {
 
     console.log('check ticker cache', startDate, endDate, selectedTickersString);
 
+
     // get cacheStatus for each ticker
     const cachedStockDataStatuses = selectedTickersString.map(ticker => {
+        // return quandlIDB.getCachedTickerData(ticker, startDate, endDate);
         return determineCachedStockDataStatus(storedStockData, startDate, endDate, ticker, requestDateFormat);
     });
 

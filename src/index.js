@@ -26,7 +26,7 @@ const store = IS_PROD ?
         composeEnhancers(applyMiddleware(sagaMiddleware))
     );
 
-createQuandlIDB();
+export const quandlIDB = createQuandlIDB();
 
 sagaMiddleware.run(stockAppSaga)
 
