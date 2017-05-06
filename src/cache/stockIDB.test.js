@@ -444,4 +444,48 @@ describe('stockIDB test', () => {
             .catch(catchErrorAsync(done, 'Unexpected error using put and get'));
     });
 
+    it(`stockIDB works properly when using different format of ISO date format`, (done) => {
+        const testData = [
+            { date: "2017-01-03", ticker: 'TEST_DIFFERENT_ISO_FORMAT', open: 10, close: 10 },
+            { date: "2017-01-06", ticker: 'TEST_DIFFERENT_ISO_FORMAT', open: 11, close: 11 },
+            { date: "2017-01-07", ticker: 'TEST_DIFFERENT_ISO_FORMAT', open: 12, close: 12 }
+        ];
+
+        const formattedTestData = testData.map(data => {
+            const dataCopy = Object.assign({}, data);
+            dataCopy.date = moment(dataCopy.date, 'YYYY-MM-DD').format('YYYYMMDD');
+            return dataCopy;
+        });
+
+        stockIDB.putTickerData(testData)
+            .then(results => {
+                expect(results.length).to.deep.equal(formattedTestData.length);
+
+                let expectedKeys = formattedTestData.map(stockIDB.getTickerObjectStoreKey);
+                // sort expectedKeys
+                expectedKeys = expectedKeys.sort();
+                expect(results).to.deep.equal(expectedKeys);
+            }, catchErrorAsync(done, 'Put error'))
+            .then(() => {
+                return stockIDB.getCachedTickerData('TEST_DIFFERENT_ISO_FORMAT', '2017-01-01', '2017-01-31');
+            })
+            .then(cachedTickerData => {
+                const expectedDateGaps = [
+                    stockIDB.dateGapFactory('20170101', '20170102'),
+                    stockIDB.dateGapFactory('20170104', '20170105'),
+                    stockIDB.dateGapFactory('20170108', '20170131')
+                ].sort(dateGapComparer);
+
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    CACHE_AVAILABILITY.PARTIAL,
+                    formattedTestData.sort(stockDataComparer),
+                    expectedDateGaps
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }, catchErrorAsync(done, `Get cached error`))
+            .catch(catchErrorAsync(done, `Unknown error in put and get`));
+    });
+
 });
