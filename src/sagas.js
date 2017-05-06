@@ -15,9 +15,32 @@ export const getApiKey = (state) => state.apiKey;
 export const getServerHost = (state) => state.serverHost;
 export const getSelectedDate = (state) => state.selectedDate;
 export const getSelectedTickers = (state) => state.selectedTickers;
+
 export const getStoredStockData = (state) => state.storedStockData;
 
 const requestDateFormat = 'YYYYMMDD';
+
+function* selectedDataChanged(action) {
+    // get selected date
+    const dateRange = yield select(getSelectedDate);
+    const { startDate, endDate } = dateRange;
+    // get selected tickers
+    const selectedTickersObj = yield select(getSelectedTickers);
+    // get the string of tickers
+    const selectedTickersString = selectedTickersObj.map(selectedTickerObj => selectedTickerObj.value);
+
+    const serverHost = yield select(getServerHost);
+    const apiKey = yield select(getApiKey);
+
+    // check cache
+    const cachedStockStatuses = yield selectedTickersString.map(ticker => call(quandlIDB.getCachedTickerData, ticker, startDate, endDate));
+
+    const fullyCachedStatuses = cachedStockDataStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.FULL);
+    const partiallyCachedStatuses = cachedStockDataStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.PARTIAL);
+    const nonCachedStatuses = cachedStockDataStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.NONE);
+
+    
+}
 
 function* selectedInfoChanged(action) {
     // check if the ticker is cached
@@ -36,10 +59,8 @@ function* selectedInfoChanged(action) {
 
     console.log('check ticker cache', startDate, endDate, selectedTickersString);
 
-
     // get cacheStatus for each ticker
     const cachedStockDataStatuses = selectedTickersString.map(ticker => {
-        // return quandlIDB.getCachedTickerData(ticker, startDate, endDate);
         return determineCachedStockDataStatus(storedStockData, startDate, endDate, ticker, requestDateFormat);
     });
 
