@@ -1,5 +1,7 @@
-import createStockIDB, { applyMiddleware, stockDataComparer, defaultConfig } from './stockIDB';
+import createStockIDB, { applyMiddleware, stockDataComparer, defaultConfig, CACHE_AVAILABILITY } from './stockIDB';
 import moment from 'moment';
+
+export { CACHE_AVAILABILITY };
 
 export default function createQuandlIDB(overrider) {
     let quandlIDBInstance = null;

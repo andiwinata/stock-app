@@ -1,4 +1,4 @@
-import createQuandlIDB from './quandlIDB';
+import createQuandlIDB, { CACHE_AVAILABILITY } from './quandlIDB';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
@@ -117,7 +117,7 @@ describe('quandlIDB test', () => {
         quandlIDB.getCachedTickerData('GOOG', '20170101', '20170131')
             .then(cachedTickerData => {
                 const expectedResults = quandlIDB.cacheStatusFactory(
-                    quandlIDB.CACHE_AVAILABILITY.FULL,
+                    CACHE_AVAILABILITY.FULL,
                     googData.sort(stockDataComparer)
                 );
 
@@ -169,7 +169,7 @@ describe('quandlIDB test', () => {
                 });
 
                 const expectedResults = quandlIDB.cacheStatusFactory(
-                    quandlIDB.CACHE_AVAILABILITY.FULL,
+                    CACHE_AVAILABILITY.FULL,
                     filteredMsftData.sort(stockDataComparer)
                 );
 

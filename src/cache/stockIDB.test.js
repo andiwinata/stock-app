@@ -1,4 +1,4 @@
-import createStockIDB, { applyMiddleware, stockDataComparer, dateGapComparer } from './stockIDB';
+import createStockIDB, { applyMiddleware, stockDataComparer, dateGapComparer, CACHE_AVAILABILITY } from './stockIDB';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
@@ -140,7 +140,7 @@ describe('stockIDB test', () => {
                 expectedTickerResult.sort(stockDataComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.FULL,
+                    CACHE_AVAILABILITY.FULL,
                     expectedTickerResult
                 );
 
@@ -157,7 +157,7 @@ describe('stockIDB test', () => {
                 ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
+                    CACHE_AVAILABILITY.PARTIAL,
                     msftData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -175,7 +175,7 @@ describe('stockIDB test', () => {
                 ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
+                    CACHE_AVAILABILITY.PARTIAL,
                     msftData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -194,7 +194,7 @@ describe('stockIDB test', () => {
                 ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
+                    CACHE_AVAILABILITY.PARTIAL,
                     msftData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -212,7 +212,7 @@ describe('stockIDB test', () => {
                 ];
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
+                    CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer).filter(
                         data => moment(data.date).isBetween('20170101', '20170108', 'days', '[]')
                     ),
@@ -233,7 +233,7 @@ describe('stockIDB test', () => {
                 ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
+                    CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -253,7 +253,7 @@ describe('stockIDB test', () => {
                 ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
+                    CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -273,7 +273,7 @@ describe('stockIDB test', () => {
                 ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
+                    CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer),
                     expectedDateGaps
                 );
@@ -294,7 +294,7 @@ describe('stockIDB test', () => {
                 ].sort(dateGapComparer);
 
                 const expectedResult = stockIDB.cacheStatusFactory(
-                    stockIDB.CACHE_AVAILABILITY.PARTIAL,
+                    CACHE_AVAILABILITY.PARTIAL,
                     googData.sort(stockDataComparer),
                     expectedDateGaps
                 );

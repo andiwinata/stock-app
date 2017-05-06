@@ -5,33 +5,43 @@ const isString = (str) => {
 };
 
 export const stockDataComparer = (a, b) => {
-    return a.date < b.date ?
-        -1 : (a.date > b.date ? 1 : 0);
+    return moment(a.date).diff(b.date, 'days');
 };
 
-export const dateGapComparer = (gap1, gap2) => moment(gap1.startDate).diff(gap2.startDate, 'days');
+export const dateGapComparer = (gap1, gap2, dateFormat) => moment(gap1.startDate, dateFormat).diff(gap2.startDate, 'days');
 
 export const defaultConfig = {
     dbName: 'quandlStockCache',
     objectStoreName: 'tickerObjectStore',
-    tickerDateIndexName: 'tickerDate',
-    dateFormat: 'YYYYMMDD'
+    tickerDateIndexName: 'tickerDate'
 };
 
-export default function createStockIDB(overrider, config = defaultConfig) {
+export const CACHE_AVAILABILITY = {
+    FULL: 'FULL',
+    PARTIAL: 'PARTIAL',
+    NONE: 'NONE'
+};
+
+/**
+ * Creating a stockIDB
+ * all datetime will be passed in iso format 
+ * (YYYYMMDD/YYYY-MM-DD/whatever format as long there is YYYY MM DD in correct order)
+ * 
+ * @export
+ * @param {any} overrider           for applying middleware to any functions of stockIDB
+ * @param {any} configOverride      to replace any option from defaultConfig
+ * @returns 
+ */
+export default function createStockIDB(overrider, configOverride) {
     function isIndexedDBExist() {
         const indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 
         return !!indexedDB;
     };
 
-    const CACHE_AVAILABILITY = {
-        FULL: 'FULL',
-        PARTIAL: 'PARTIAL',
-        NONE: 'NONE'
-    };
-
     let _db = null;
+    const isoDateFormat = 'YYYYMMDD';
+    const config = Object.assign({}, defaultConfig, configOverride);
 
     function _assignLegacyIndexedDB() {
         window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || { READ_WRITE: "readwrite" }; // This line should only be needed if it is needed to support the object's constants for older browsers
@@ -56,15 +66,6 @@ export default function createStockIDB(overrider, config = defaultConfig) {
 
     function getConfig(key) {
         return config[key];
-    }
-
-    function setConfig(key, value) {
-        if (key in config) {
-            config[key] = value;
-            return true;
-        }
-
-        return false;
     }
 
     function getOrCreateStockIDB() {
@@ -149,7 +150,6 @@ export default function createStockIDB(overrider, config = defaultConfig) {
         }
 
         return new Promise((resolve, reject) => {
-
             getOrCreateStockIDB().then((db) => {
                 const tickerObjectStore = db.transaction([config.objectStoreName], 'readwrite')
                     .objectStore(config.objectStoreName);
@@ -158,6 +158,11 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 const putPromises = [];
 
                 tickerData.forEach((tickerValue) => {
+                    // convert date to the indexedDB format
+                    // this is because ideally it should always be in iso format
+                    // since for querying later it is using string value
+                    tickerValue.date = moment(tickerValue.date).format(isoDateFormat);
+
                     putPromises.push(new Promise((resolve, reject) => {
                         // create ticker key so later on the old cache can be replaced by using same key
                         const putRequest = tickerObjectStore.put(
@@ -168,7 +173,7 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                             resolve(putRequest.result);
                         };
                         putRequest.onerror = (event) => {
-                            reject(`Fail to put ${tickerValue} to objectStore. ${putRequest.error}`);
+                            reject(`Fail to put ${JSON.stringify(tickerValue)} to objectStore. ${putRequest.error}`);
                         };
                     }));
                 });
@@ -187,6 +192,10 @@ export default function createStockIDB(overrider, config = defaultConfig) {
     };
 
     function getTickerData(tickerName, fromDate, toDate) {
+        // format the date for querying
+        fromDate = moment(fromDate).format(isoDateFormat);
+        toDate = moment(toDate).format(isoDateFormat);
+
         return new Promise((resolve, reject) => {
             getOrCreateStockIDB().then((db) => {
                 const tickerObjectStore = db.transaction([config.objectStoreName], 'readonly')
@@ -256,7 +265,6 @@ export default function createStockIDB(overrider, config = defaultConfig) {
 
             fromDate = moment(fromDate);
             toDate = moment(toDate);
-            const dateFormat = config.dateFormat;
 
             // if fromDate and toDate are not valid
             if (fromDate.isAfter(toDate, 'days')) {
@@ -279,8 +287,7 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 let startDateGap;
 
                 for (let tickerData of tickerDataArray) {
-
-                    if (currDate.diff(tickerData.date) !== 0) {
+                    if (currDate.diff(tickerData.date, 'days') !== 0) {
                         // current item date is not equal to currDate
                         // meaning the current tickerData.date has jumped more than 1 days
                         // so we are entering 'gap range' thus we need to set the currStartDateGap variable
@@ -294,8 +301,8 @@ export default function createStockIDB(overrider, config = defaultConfig) {
 
                         // after catching up, add the 'gap' to dateGaps from startDateGap until currentDate - 1
                         dateGaps.push(dateGapFactory(
-                            startDateGap.format(dateFormat),
-                            moment(currDate).subtract(1, 'days').format(dateFormat)
+                            startDateGap.format(isoDateFormat),
+                            moment(currDate).subtract(1, 'days').format(isoDateFormat)
                         ));
 
                         // resetting the startDateGap variable
@@ -352,8 +359,8 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 // add gap from 'fromDate' to 'firstStoredDate - 1'
                 if (startDateDiff !== 0) {
                     dateGaps.push(dateGapFactory(
-                        fromDate.format(dateFormat),
-                        moment(firstStoredDate).subtract(1, 'days').format(dateFormat)
+                        fromDate.format(isoDateFormat),
+                        moment(firstStoredDate).subtract(1, 'days').format(isoDateFormat)
                     ));
                 }
 
@@ -361,8 +368,8 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 // add gap from 'lastStoredDate + 1' to 'toDate'
                 if (endDateDiff !== 0) {
                     dateGaps.push(dateGapFactory(
-                        moment(lastStoredDate).add(1, 'days').format(dateFormat),
-                        toDate.format(dateFormat)
+                        moment(lastStoredDate).add(1, 'days').format(isoDateFormat),
+                        toDate.format(isoDateFormat)
                     ));
                 }
 
@@ -388,7 +395,7 @@ export default function createStockIDB(overrider, config = defaultConfig) {
             };
 
             // make getTickerData request
-            getTickerData(tickerName, fromDate.format(dateFormat), toDate.format(dateFormat))
+            getTickerData(tickerName, fromDate.format(isoDateFormat), toDate.format(isoDateFormat))
                 .then(storedTickerDataArr => {
                     // wrap the ticker data
                     const cacheStatusOfStoredTickerData = wrapTickerDataInsideCacheStatus(storedTickerDataArr);
@@ -432,7 +439,6 @@ export default function createStockIDB(overrider, config = defaultConfig) {
         isIndexedDBExist,
         CACHE_AVAILABILITY,
         getConfig,
-        setConfig,
         getOrCreateStockIDB,
         getStockIDB,
         getTickerObjectStoreKey,
