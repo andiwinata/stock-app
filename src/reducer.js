@@ -71,6 +71,15 @@ export function storedStockData(state = {}, action) {
     }
 }
 
+export function shownStockData(state = [], action) {
+    switch (action.tyoe) {
+        case actionTypes.TICKER_DATA_RECEIVED:
+            return [];
+        default:
+            return state;        
+    }
+}
+
 export function apiKey(state = '', action) {
     switch (action.type) {
         default:
@@ -90,6 +99,7 @@ export default combineReducers({
     shownTickers,
     shownDate,
     storedStockData,
+    shownStockData,
     apiKey,
     serverHost
 });

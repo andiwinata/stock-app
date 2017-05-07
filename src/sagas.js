@@ -5,7 +5,7 @@ import * as actionTypes from './actionTypes';
 
 import { processQuandlJson } from './api/tickerDataProcessor';
 import { determineCachedStockDataStatus, CACHE_AVAILABILITY } from './storeFunctions';
-import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses } from './api/requestFunctions';
+import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses, generateUrisFromCacheStatuses } from './api/requestFunctions';
 
 import { quandlIDB } from './index';
 
@@ -35,10 +35,22 @@ function* selectedDataChanged(action) {
     // check cache
     const cachedStockStatuses = yield selectedTickersString.map(ticker => call(quandlIDB.getCachedTickerData, ticker, startDate, endDate));
 
-    const fullyCachedStatuses = cachedStockDataStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.FULL);
-    const partiallyCachedStatuses = cachedStockDataStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.PARTIAL);
-    const nonCachedStatuses = cachedStockDataStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.NONE);
+    const fullyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.FULL);
+    const partiallyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.PARTIAL);
+    const nonCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.NONE);
 
+    // meaning everything is cached
+    if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
+        yield put(actionCreators.tickerDataReceived(
+            fullyCachedStatuses.cacheData,
+            selectedTickersObj,
+            dateRange
+        ));
+        return;
+    }
+
+    // get urls to download missing data for partially/non-cached data
+    const uris = generateUrisFromCacheStatuses([...partiallyCachedStatuses, ...nonCachedStatuses], serverHost, apiKey);
     
 }
 

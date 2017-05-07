@@ -235,7 +235,8 @@ export default function createStockIDB(overrider, configOverride) {
         return {
             cacheAvailability,
             cacheData,
-            dateGaps
+            dateGaps,
+            tickerName: cacheData && cacheData[0] ? cacheData[0].ticker : null
         };
     };
 
