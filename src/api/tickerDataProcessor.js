@@ -87,3 +87,35 @@ export function processQuandlJson(jsonData, reqStartDate, reqEndDate, dateFormat
 
     return processedData;
 }
+
+export function processQuandlJsonIDB(jsonData, reqStartDate, reqEndDate, dateFormat = 'YYYYMMDD') {
+    const columnsName = jsonData.datatable.columns;
+
+    let jsonColumnNameToArrayIndex = {};
+    columnsName.forEach((columnData, index) => {
+        jsonColumnNameToArrayIndex[columnData.name] = index;
+    });
+
+    const tickerData = jsonData.datatable.data;
+    const processedData = {};
+
+    tickerData.forEach(tickerDatum => {
+        const tickerName = tickerData[jsonColumnNameToArrayIndex['ticker']];
+
+        if (!processedData[tickerName]) {
+            processedData[tickerName] = [];
+        }
+
+        processedData[tickerName].push({
+            date: moment(tickerData[jsonColumnNameToArrayIndex['date']]).format(dateFormat),
+            ticker: tickerName,
+            adj_open: tickerData[jsonColumnNameToArrayIndex['adj_open']],
+            adj_high: tickerData[jsonColumnNameToArrayIndex['adj_high']],
+            adj_low: tickerData[jsonColumnNameToArrayIndex['adj_low']],
+            adj_close: tickerData[jsonColumnNameToArrayIndex['adj_close']],
+            adj_volume: tickerData[jsonColumnNameToArrayIndex['adj_volume']],
+        });
+    });
+
+    return processedData;
+}
