@@ -100,20 +100,20 @@ export function processQuandlJsonIDB(jsonData, reqStartDate, reqEndDate, dateFor
     const processedData = {};
 
     tickerData.forEach(tickerDatum => {
-        const tickerName = tickerData[jsonColumnNameToArrayIndex['ticker']];
+        const tickerName = tickerDatum[jsonColumnNameToArrayIndex['ticker']];
 
         if (!processedData[tickerName]) {
             processedData[tickerName] = [];
         }
 
         processedData[tickerName].push({
-            date: moment(tickerData[jsonColumnNameToArrayIndex['date']]).format(dateFormat),
+            date: moment(tickerDatum[jsonColumnNameToArrayIndex['date']]).format(dateFormat),
             ticker: tickerName,
-            adj_open: tickerData[jsonColumnNameToArrayIndex['adj_open']],
-            adj_high: tickerData[jsonColumnNameToArrayIndex['adj_high']],
-            adj_low: tickerData[jsonColumnNameToArrayIndex['adj_low']],
-            adj_close: tickerData[jsonColumnNameToArrayIndex['adj_close']],
-            adj_volume: tickerData[jsonColumnNameToArrayIndex['adj_volume']],
+            adj_open: tickerDatum[jsonColumnNameToArrayIndex['adj_open']],
+            adj_high: tickerDatum[jsonColumnNameToArrayIndex['adj_high']],
+            adj_low: tickerDatum[jsonColumnNameToArrayIndex['adj_low']],
+            adj_close: tickerDatum[jsonColumnNameToArrayIndex['adj_close']],
+            adj_volume: tickerDatum[jsonColumnNameToArrayIndex['adj_volume']],
         });
     });
 
