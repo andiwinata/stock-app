@@ -3,13 +3,14 @@ import { delay } from 'redux-saga'
 import * as actionCreators from './actionCreators';
 import * as actionTypes from './actionTypes';
 
-import { processQuandlJson } from './api/tickerDataProcessor';
+import { processQuandlJson, processQuandlJsonIDB } from './api/tickerDataProcessor';
 import { determineCachedStockDataStatus, CACHE_AVAILABILITY } from './storeFunctions';
 import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses, generateUrisFromCacheStatuses } from './api/requestFunctions';
 
 import { quandlIDB } from './index';
 
 import merge from 'lodash.merge';
+import mergeWith from 'lodash.mergewith';
 
 export const getApiKey = (state) => state.apiKey;
 export const getServerHost = (state) => state.serverHost;
@@ -19,6 +20,21 @@ export const getSelectedTickers = (state) => state.selectedTickers;
 export const getStoredStockData = (state) => state.storedStockData;
 
 const requestDateFormat = 'YYYYMMDD';
+
+export const fetchJson = (uri) =>
+    fetch(uri)
+        .then(resp => {
+            if (resp.ok) {
+                return resp.json();
+            }
+            throw new Error(`response is not okay! Status: ${response.status}, StatusText: ${response.statusText}`);
+        });
+
+export const mergeWithArrayConcat = (objValue, srcValue) => {
+    if (Array.isArray(objValue)) {
+        return objValue.concat(srcValue);
+    }
+};
 
 function* selectedDataChanged(action) {
     // get selected date
@@ -33,6 +49,7 @@ function* selectedDataChanged(action) {
     const apiKey = yield select(getApiKey);
 
     // check cache
+    // http://stackoverflow.com/questions/40043644/redux-saga-how-to-create-multiple-calls-side-effects-programmatically-for-yield
     const cachedStockStatuses = yield selectedTickersString.map(ticker => call(quandlIDB.getCachedTickerData, ticker, startDate, endDate));
 
     const fullyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.FULL);
@@ -51,7 +68,26 @@ function* selectedDataChanged(action) {
 
     // get urls to download missing data for partially/non-cached data
     const uris = generateUrisFromCacheStatuses([...partiallyCachedStatuses, ...nonCachedStatuses], serverHost, apiKey);
-    
+
+    // get the json data from making request, then process the json
+    const jsonResponses = yield uris.map(uri => fetchJson(uri));
+    const processedJson = jsonResponses.map(jsonResp => processQuandlJson(jsonResp, startDate, endDate));
+
+    // put the processed Json to IDB
+
+    // concatenate the data into one
+    const tickerData = Object.assign(
+        {},
+        ...fullyCachedStatuses.map(status => status.cacheData),
+        ...partiallyCachedStatuses.map(status => status.cacheData)
+    );
+
+    mergeWith(tickerData, jsonResponses, mergeWithArrayConcat);
+
+    // partially cached data
+    const partiallyCachedTickerNames = partiallyCachedStatuses.map(status => status.tickerName);
+
+    // send put request with new data
 }
 
 function* selectedInfoChanged(action) {
