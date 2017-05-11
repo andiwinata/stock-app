@@ -8,6 +8,7 @@ import { determineCachedStockDataStatus, CACHE_AVAILABILITY } from './storeFunct
 import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses, generateUrisFromCacheStatuses } from './api/requestFunctions';
 
 import { quandlIDB } from './index';
+import { stockDataComparer } from './cache/quandlIDB';
 
 import merge from 'lodash.merge';
 import mergeWith from 'lodash.mergewith';
@@ -73,8 +74,6 @@ function* selectedDataChanged(action) {
     const jsonResponses = yield uris.map(uri => fetchJson(uri));
     const processedJson = jsonResponses.map(jsonResp => processQuandlJson(jsonResp, startDate, endDate));
 
-    // put the processed Json to IDB
-
     // concatenate the data into one
     const tickerData = Object.assign(
         {},
@@ -82,12 +81,24 @@ function* selectedDataChanged(action) {
         ...partiallyCachedStatuses.map(status => status.cacheData)
     );
 
+    // merge cache with responses
     mergeWith(tickerData, jsonResponses, mergeWithArrayConcat);
 
-    // partially cached data
-    const partiallyCachedTickerNames = partiallyCachedStatuses.map(status => status.tickerName);
+    // sort the merge of partially cached data
+    const partiallyCachedTickerNames = partiallyCachedStatuses.forEach(status => {
+        tickerData[status.tickerName].sort(stockDataComparer);
+    });
 
-    // send put request with new data
+    yield [
+        // send put request with new data
+        put(actionCreators.tickerDataReceived(
+            tickerData,
+            selectedTickersObj,
+            dateRange
+        )),
+        // put the processed Json to IDB
+        call(quandlIDB.putTickerData, tickerData, startDate, endDate)
+    ];
 }
 
 function* selectedInfoChanged(action) {
