@@ -127,6 +127,21 @@ describe('stockIDB test', () => {
             }).catch(catchErrorAsync(done, `Get request error`));
     });
 
+    it(`${stockIDB.getCachedTickerData.name} returns non cached data correctly`, (done) => {
+        stockIDB.getCachedTickerData('NULL', '20170106', '20170108')
+            .then(cachedTickerData => {
+                const expectedResult = stockIDB.cacheStatusFactory(
+                    'NULL',
+                    CACHE_AVAILABILITY.NONE,
+                    [],
+                    [stockIDB.dateGapFactory('20170106', '20170108')]
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error:`));
+    });
+
     it(`${stockIDB.getCachedTickerData.name} returns fully cached data correctly`, (done) => {
         stockIDB.getCachedTickerData('MSFT', '20170106', '20170108')
             .then(cachedTickerData => {

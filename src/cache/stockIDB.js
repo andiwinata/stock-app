@@ -325,12 +325,14 @@ export default function createStockIDB(overrider, configOverride) {
              * 
              * @param {[tickerData]} storedTickerDataArr 
              */
-            const wrapTickerDataInsideCacheStatus = (storedTickerDataArr, tickerName) => {
+            const wrapTickerDataInsideCacheStatus = (storedTickerDataArr) => {
                 // if there is no stored data
                 if (storedTickerDataArr.length === 0) {
                     return cacheStatusFactory(
                         tickerName,
-                        CACHE_AVAILABILITY.NONE
+                        CACHE_AVAILABILITY.NONE,
+                        [],
+                        [dateGapFactory(fromDate.format(isoDateFormat), toDate.format(isoDateFormat))]
                     );
                 }
 
@@ -402,7 +404,7 @@ export default function createStockIDB(overrider, configOverride) {
             getTickerData(tickerName, fromDate.format(isoDateFormat), toDate.format(isoDateFormat))
                 .then(storedTickerDataArr => {
                     // wrap the ticker data
-                    const cacheStatusOfStoredTickerData = wrapTickerDataInsideCacheStatus(storedTickerDataArr, tickerName);
+                    const cacheStatusOfStoredTickerData = wrapTickerDataInsideCacheStatus(storedTickerDataArr);
                     // then pass in the cacheStatus result
                     resolve(cacheStatusOfStoredTickerData);
                 }).catch(getError => {
