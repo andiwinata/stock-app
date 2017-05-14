@@ -117,6 +117,7 @@ describe('quandlIDB test', () => {
         quandlIDB.getCachedTickerData('GOOG', '20170101', '20170131')
             .then(cachedTickerData => {
                 const expectedResults = quandlIDB.cacheStatusFactory(
+                    'GOOG',
                     CACHE_AVAILABILITY.FULL,
                     googData.sort(stockDataComparer)
                 );
@@ -169,6 +170,7 @@ describe('quandlIDB test', () => {
                 });
 
                 const expectedResults = quandlIDB.cacheStatusFactory(
+                    'MSFT',
                     CACHE_AVAILABILITY.FULL,
                     filteredMsftData.sort(stockDataComparer)
                 );
