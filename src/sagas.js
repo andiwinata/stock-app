@@ -56,6 +56,7 @@ function* selectedDataChanged(action) {
     const fullyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.FULL);
     const partiallyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.PARTIAL);
     const nonCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.NONE);
+    console.log('noncached', nonCachedStatuses);
 
     // meaning everything is cached
     if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
@@ -69,10 +70,12 @@ function* selectedDataChanged(action) {
 
     // get urls to download missing data for partially/non-cached data
     const uris = generateUrisFromCacheStatuses([...partiallyCachedStatuses, ...nonCachedStatuses], serverHost, apiKey);
+    console.log('uris', uris);
 
     // get the json data from making request, then process the json
     const jsonResponses = yield uris.map(uri => fetchJson(uri));
-    const processedJson = jsonResponses.map(jsonResp => processQuandlJson(jsonResp, startDate, endDate));
+    const processedJson = jsonResponses.map(jsonResp => processQuandlJsonIDB(jsonResp, startDate, endDate));
+    console.log('jsonresp', jsonResponses, processedJson);
 
     // concatenate the data into one
     const tickerData = Object.assign(
@@ -82,23 +85,25 @@ function* selectedDataChanged(action) {
     );
 
     // merge cache with responses
-    mergeWith(tickerData, jsonResponses, mergeWithArrayConcat);
+    mergeWith(tickerData, processedJson, mergeWithArrayConcat);
+    
+    console.log('ticker data', tickerData);
 
     // sort the merge of partially cached data
     const partiallyCachedTickerNames = partiallyCachedStatuses.forEach(status => {
         tickerData[status.tickerName].sort(stockDataComparer);
     });
 
-    yield [
-        // send put request with new data
-        put(actionCreators.tickerDataReceived(
-            tickerData,
-            selectedTickersObj,
-            dateRange
-        )),
-        // put the processed Json to IDB
-        call(quandlIDB.putTickerData, tickerData, startDate, endDate)
-    ];
+    // yield [
+    //     // send put request with new data
+    //     put(actionCreators.tickerDataReceived(
+    //         tickerData,
+    //         selectedTickersObj,
+    //         dateRange
+    //     )),
+    //     // put the processed Json to IDB
+    //     call(quandlIDB.putTickerData, tickerData, startDate, endDate)
+    // ];
 }
 
 function* selectedInfoChanged(action) {
@@ -116,7 +121,7 @@ function* selectedInfoChanged(action) {
     const serverHost = yield select(getServerHost);
     const apiKey = yield select(getApiKey);
 
-    console.log('check ticker cache', startDate, endDate, selectedTickersString);
+    // console.log('check ticker cache', startDate, endDate, selectedTickersString);
 
     // get cacheStatus for each ticker
     const cachedStockDataStatuses = selectedTickersString.map(ticker => {
@@ -128,20 +133,20 @@ function* selectedInfoChanged(action) {
     const partiallyCachedStatuses = cachedStockDataStatuses.filter(cacheStatus => cacheStatus.cacheAvailability === CACHE_AVAILABILITY.PARTIAL);
     const nonCachedStatuses = cachedStockDataStatuses.filter(cacheStatus => cacheStatus.cacheAvailability === CACHE_AVAILABILITY.NONE);
 
-    console.log('CACHE STATUSES', fullyCachedStatuses, partiallyCachedStatuses, nonCachedStatuses);
+    // console.log('CACHE STATUSES', fullyCachedStatuses, partiallyCachedStatuses, nonCachedStatuses);
 
     const cachedTickerNames = [
         ...fullyCachedStatuses.map(cacheStatus => cacheStatus.ticker),
         ...partiallyCachedStatuses.map(cacheStatus => cacheStatus.ticker),
     ];
-    console.log("CACHED TICKER NAMES:", cachedTickerNames);
+    // console.log("CACHED TICKER NAMES:", cachedTickerNames);
 
     const cachedStockData = {};
     cachedTickerNames.forEach((tickerName) => {
         cachedStockData[tickerName] = storedStockData[tickerName];
     });
 
-    console.log("CACHED STOCK DATA", cachedStockData);
+    // console.log("CACHED STOCK DATA", cachedStockData);
 
     // check if no non-cached data
     if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
@@ -155,11 +160,11 @@ function* selectedInfoChanged(action) {
     }
 
     const requestUris = getRequestUrisForCacheStatuses(serverHost, [...partiallyCachedStatuses, ...nonCachedStatuses], apiKey);
-    console.log("REQUEST URIS", requestUris);
+    // console.log("REQUEST URIS", requestUris);
 
     const uriPromises = requestUris.map(uri => fetch(uri)
         .then(resp => {
-            console.log('RESPONSE', resp);
+            // console.log('RESPONSE', resp);
             if (resp.ok) {
                 return resp.json();
             }
@@ -177,7 +182,7 @@ function* selectedInfoChanged(action) {
     );
     const combinedJsonResponses = merge({}, cachedStockData, ...processedJsons);
 
-    console.log("COMBINED JSON RESPONSES", combinedJsonResponses);
+    // console.log("COMBINED JSON RESPONSES", combinedJsonResponses);
     yield put(actionCreators.tickerDataReceived(
         combinedJsonResponses,
         selectedTickersObj,
@@ -190,6 +195,10 @@ function* stockAppSaga() {
         takeEvery(
             [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
             selectedInfoChanged
+        ),
+        takeEvery(
+            [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
+            selectedDataChanged
         )
     ];
 }
