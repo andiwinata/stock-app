@@ -110,7 +110,7 @@ export function generateUrisFromCacheStatuses(cacheStatuses, serverHost, apiKey)
     cacheStatuses.forEach(cacheStatus => {
         cacheStatus.dateGaps.forEach(dateGap => {
             const dateGapKey = `${dateGap.startDate}_${dateGap.endDate}`;
-            if (!dateGapKey in tickerNamesGroupedByDateGap) {
+            if (!(dateGapKey in tickerNamesGroupedByDateGap)) {
                 tickerNamesGroupedByDateGap[dateGapKey] = [];
             }
 
