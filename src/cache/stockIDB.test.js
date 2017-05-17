@@ -87,20 +87,26 @@ describe('stockIDB test', () => {
     // not sure if this is the correct approach, this causes unit test dependant to others
     // They also share same instance of indexedDB, so all put will be retained until deleted
 
-    it(`${stockIDB.putTickerData.name} puts data correctly and returning correct SORTED keys`, (done) => {
-        const stockDataTest = [...amznData, ...msftData, ...googData];
-
-        stockIDB.putTickerData(stockDataTest)
+    const testPutTickerData = (done, stockData) => {
+        stockIDB.putTickerData(stockData)
             .then(results => {
                 // test length
-                expect(results.length).to.deep.equal(stockDataTest.length);
+                expect(results.length).to.deep.equal(stockData.length);
 
-                let expectedKeys = stockDataTest.map(stockIDB.getTickerObjectStoreKey);
+                let expectedKeys = stockData.map(stockIDB.getTickerObjectStoreKey);
                 // sort expectedKeys
                 expectedKeys = expectedKeys.sort();
                 expect(results).to.deep.equal(expectedKeys);
                 done();
             }).catch(catchErrorAsync(done, 'Put request error'));
+    };
+
+    it(`${stockIDB.putTickerData.name} puts data correctly and returning correct SORTED keys`, (done) => {
+        testPutTickerData(done, [...amznData, ...msftData]);
+    });
+
+    it(`${stockIDB.putTickerData.name} puts data correctly and returning correct SORTED keys for the second time`, (done) => {
+        testPutTickerData(done, [...googData]);
     });
 
     it(`${stockIDB.getTickerData.name} returns data correctly and return SORTED data`, (done) => {

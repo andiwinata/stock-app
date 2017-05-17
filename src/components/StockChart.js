@@ -93,7 +93,7 @@ class StockChart extends PureComponent {
 
     componentWillReceiveProps(props) {
         const { startDate, endDate } = props.shownDate;
-        console.log(props.storedStockData, startDate, endDate, props.shownTickers, "!!!!!!!!!!!!!!!!!!!!!!!!!!!xxxxxxxxxxx");
+        // console.log(props.storedStockData, startDate, endDate, props.shownTickers, "!!!!!!!!!!!!!!!!!!!!!!!!!!!xxxxxxxxxxx");
 
         if (!startDate || !endDate || !props.shownTickers || props.shownTickers.length === 0) {
             return;
@@ -101,7 +101,7 @@ class StockChart extends PureComponent {
 
         // right now just do one ticker
         const storedTickerData = props.storedStockData[props.shownTickers[0].value].dailyData;
-        console.log("COMPONENT WILL RECEIVE PROPSS STOCK CHART!!!!!!!!", storedTickerData);
+        // console.log("COMPONENT WILL RECEIVE PROPSS STOCK CHART!!!!!!!!", storedTickerData);
 
         this.ohlc = [];
         this.volume = [];
@@ -134,7 +134,7 @@ class StockChart extends PureComponent {
                 this.volume.push(volumeData);
             }
         });
-        console.log("FINAL DATA", this.ohlc, this.volume, this.ohlc.length);
+        // console.log("FINAL DATA", this.ohlc, this.volume, this.ohlc.length);
 
         this.chart.series[0].update({
             data: this.ohlc,

@@ -15,12 +15,11 @@ export default function createQuandlIDB(overrider) {
             return {
                 ticker,
                 date,
-                open: -1,
-                close: -1
+                empty: true
             };
         };
 
-        const isNotEmptyTickerData = tickerData => tickerData.open != -1 && tickerData.close != -1;
+        const isNotEmptyTickerData = tickerData => !tickerData.empty;
 
         /**
          * Trying to fill in dateGaps from tickerData, based on startDate and endDate

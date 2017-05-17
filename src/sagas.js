@@ -56,7 +56,9 @@ function* selectedDataChanged(action) {
     const fullyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.FULL);
     const partiallyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.PARTIAL);
     const nonCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.NONE);
-    console.log('noncached', nonCachedStatuses);
+    console.log('fullyCache', fullyCachedStatuses);
+    console.log('partCache', partiallyCachedStatuses);
+    console.log('nonCache', nonCachedStatuses);
 
     // meaning everything is cached
     if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
@@ -75,24 +77,36 @@ function* selectedDataChanged(action) {
     // get the json data from making request, then process the json
     const jsonResponses = yield uris.map(uri => fetchJson(uri));
     const processedJson = jsonResponses.map(jsonResp => processQuandlJsonIDB(jsonResp, startDate, endDate));
-    console.log('jsonresp', jsonResponses, processedJson);
+    // combine processedJson into 1 object
+    const combinedProcessedJson = mergeWith({}, ...processedJson, mergeWithArrayConcat);
+    const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
+    console.log('jsonresp', jsonResponses, processedJson, combinedProcessedJson);
+
+    const createProcessedCacheStatus = status => {
+        const key = status.tickerName;
+        const val = status.cacheData;
+        return { key: val }
+    };
 
     // concatenate the data into one
     const tickerData = Object.assign(
         {},
-        ...fullyCachedStatuses.map(status => status.cacheData),
-        ...partiallyCachedStatuses.map(status => status.cacheData)
+        ...fullyCachedStatuses.map(createProcessedCacheStatus),
+        ...partiallyCachedStatuses.map(createProcessedCacheStatus)
     );
 
     // merge cache with responses
-    mergeWith(tickerData, processedJson, mergeWithArrayConcat);
-    
+    mergeWith(tickerData, combinedProcessedJson, mergeWithArrayConcat);
+
     console.log('ticker data', tickerData);
 
     // sort the merge of partially cached data
     const partiallyCachedTickerNames = partiallyCachedStatuses.forEach(status => {
         tickerData[status.tickerName].sort(stockDataComparer);
     });
+
+    console.log('combined processed json data', combinedProcessedJsonData, startDate, endDate);
+    yield call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate);
 
     // yield [
     //     // send put request with new data
@@ -192,10 +206,10 @@ function* selectedInfoChanged(action) {
 
 function* stockAppSaga() {
     yield [
-        takeEvery(
-            [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
-            selectedInfoChanged
-        ),
+        // takeEvery(
+        //     [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
+        //     selectedInfoChanged
+        // ),
         takeEvery(
             [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
             selectedDataChanged
