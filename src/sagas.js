@@ -7,7 +7,7 @@ import { processQuandlJson, processQuandlJsonIDB } from './api/tickerDataProcess
 import { determineCachedStockDataStatus, CACHE_AVAILABILITY } from './storeFunctions';
 import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses, generateUrisFromCacheStatuses } from './api/requestFunctions';
 
-import { quandlIDB } from './index';
+import { quandlIDB } from './cache/quandlIDBInstance';
 import { stockDataComparer } from './cache/quandlIDB';
 
 import merge from 'lodash.merge';
@@ -37,7 +37,7 @@ export const mergeWithArrayConcat = (objValue, srcValue) => {
     }
 };
 
-function* selectedDataChanged(action) {
+export function* selectedDataChanged(action) {
     // get selected date
     const dateRange = yield select(getSelectedDate);
     const { startDate, endDate } = dateRange;
@@ -204,17 +204,17 @@ function* selectedInfoChanged(action) {
     ));
 }
 
-function* stockAppSaga() {
-    yield [
-        // takeEvery(
-        //     [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
-        //     selectedInfoChanged
-        // ),
-        takeEvery(
-            [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
-            selectedDataChanged
-        )
-    ];
+export default function* stockAppSaga() {
+    yield takeEvery([actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED], selectedInfoChanged);
+    yield takeEvery([actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED], selectedDataChanged);
+    // yield [
+    //     takeEvery(
+    //         [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
+    //         selectedInfoChanged
+    //     ),
+    //     // takeEvery(
+    //     //     [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
+    //     //     selectedDataChanged
+    //     // )
+    // ];
 }
-
-export default stockAppSaga;
