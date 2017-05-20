@@ -22,6 +22,31 @@ export const CACHE_AVAILABILITY = {
     NONE: 'NONE'
 };
 
+export function cacheStatusFactory(tickerName, cacheAvailability = CACHE_AVAILABILITY.NONE, cacheData = [], dateGaps = []) {
+    const validDateGaps = dateGaps.every(gap => 'startDate' in gap && 'endDate' in gap);
+    if (!validDateGaps) {
+        throw new TypeError(`dateGaps must contain only dateGap object`);
+    }
+
+    return {
+        tickerName,
+        cacheAvailability,
+        cacheData,
+        dateGaps,
+    };
+};
+
+export function dateGapFactory(startDate, endDate) {
+    if (!isString(startDate) || !isString(endDate)) {
+        throw TypeError(`startDate and endDate must be string`);
+    }
+
+    return {
+        startDate,
+        endDate
+    };
+};
+
 /**
  * Creating a stockIDB
  * all datetime will be passed in iso format 
@@ -224,31 +249,6 @@ export default function createStockIDB(overrider, configOverride) {
             });
 
         });
-    };
-
-    function cacheStatusFactory(tickerName, cacheAvailability = CACHE_AVAILABILITY.NONE, cacheData = [], dateGaps = []) {
-        const validDateGaps = dateGaps.every(gap => 'startDate' in gap && 'endDate' in gap);
-        if (!validDateGaps) {
-            throw new TypeError(`dateGaps must contain only dateGap object`);
-        }
-
-        return {
-            tickerName,
-            cacheAvailability,
-            cacheData,
-            dateGaps,
-        };
-    };
-
-    function dateGapFactory(startDate, endDate) {
-        if (!isString(startDate) || !isString(endDate)) {
-            throw TypeError(`startDate and endDate must be string`);
-        }
-
-        return {
-            startDate,
-            endDate
-        };
     };
 
     /**

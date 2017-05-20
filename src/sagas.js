@@ -22,19 +22,34 @@ export const getStoredStockData = (state) => state.storedStockData;
 
 const requestDateFormat = 'YYYYMMDD';
 
-export const fetchJson = (uri) =>
-    fetch(uri)
+export function fetchJson(uri) {
+    return fetch(uri)
         .then(resp => {
             if (resp.ok) {
                 return resp.json();
             }
             throw new Error(`response is not okay! Status: ${response.status}, StatusText: ${response.statusText}`);
         });
+}
 
-export const mergeWithArrayConcat = (objValue, srcValue) => {
+export function mergeWithArrayConcat(objValue, srcValue) {
     if (Array.isArray(objValue)) {
         return objValue.concat(srcValue);
     }
+};
+
+function createProcessedCacheStatus(status) {
+    return { [status.tickerName]: status.cacheData }
+};
+
+export function convertCacheStatusesToActionTickerData(...multipleCacheStatuses) {
+    const actionTickerData = {};
+
+    multipleCacheStatuses.forEach(cacheStatuses => {
+        Object.assign(actionTickerData, ...cacheStatuses.map(createProcessedCacheStatus));
+    });
+
+    return actionTickerData;
 };
 
 export function* selectedDataChanged(action) {
@@ -63,7 +78,7 @@ export function* selectedDataChanged(action) {
     // meaning everything is cached
     if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
         yield put(actionCreators.tickerDataReceived(
-            fullyCachedStatuses.cacheData,
+            convertCacheStatusesToActionTickerData(fullyCachedStatuses),
             selectedTickersObj,
             dateRange
         ));
@@ -89,6 +104,7 @@ export function* selectedDataChanged(action) {
     };
 
     // concatenate the data into one
+    // TODO REMOVE!!!!!!!!!!!!
     const tickerData = Object.assign(
         {},
         ...fullyCachedStatuses.map(createProcessedCacheStatus),
