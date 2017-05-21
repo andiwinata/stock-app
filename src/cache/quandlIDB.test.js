@@ -1,4 +1,4 @@
-import createQuandlIDB, { CACHE_AVAILABILITY } from './quandlIDB';
+import createQuandlIDB, { CACHE_AVAILABILITY, dateGapFactory, cacheStatusFactory } from './quandlIDB';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
@@ -145,7 +145,7 @@ describe('quandlIDB test', () => {
     it(`quandlIDB.getCachedTickerData return all NOT-empty ticker data`, done => {
         quandlIDB.getCachedTickerData('GOOG', '20170101', '20170131')
             .then(cachedTickerData => {
-                const expectedResults = quandlIDB.cacheStatusFactory(
+                const expectedResults = cacheStatusFactory(
                     'GOOG',
                     CACHE_AVAILABILITY.FULL,
                     googData.sort(stockDataComparer)
@@ -198,7 +198,7 @@ describe('quandlIDB test', () => {
                     return moment(msftData.date).isBetween(startDate2, endDate2, 'days', '[]');
                 });
 
-                const expectedResults = quandlIDB.cacheStatusFactory(
+                const expectedResults = cacheStatusFactory(
                     'MSFT',
                     CACHE_AVAILABILITY.FULL,
                     filteredMsftData.sort(stockDataComparer)

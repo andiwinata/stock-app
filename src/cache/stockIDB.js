@@ -443,15 +443,12 @@ export default function createStockIDB(overrider, configOverride) {
 
     const stockIDBInstance = {
         isIndexedDBExist,
-        CACHE_AVAILABILITY,
         getConfig,
         getOrCreateStockIDB,
         getStockIDB,
         getTickerObjectStoreKey,
         putTickerData,
         getTickerData,
-        cacheStatusFactory,
-        dateGapFactory,
         getCachedTickerData,
         deleteStockIDB
     };

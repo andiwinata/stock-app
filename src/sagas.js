@@ -43,11 +43,14 @@ function createProcessedCacheStatus(status) {
 };
 
 export function convertCacheStatusesToActionTickerData(...multipleCacheStatuses) {
-    const actionTickerData = {};
-
-    multipleCacheStatuses.forEach(cacheStatuses => {
-        Object.assign(actionTickerData, ...cacheStatuses.map(createProcessedCacheStatus));
-    });
+    // since cacheStatuses is an array
+    // and the passed param is multipleCacheStatuses
+    // so we'll flatten the array
+    const concatenatedCacheStatuses = [].concat(...multipleCacheStatuses);
+    // then assign an empty object with every processed cacheStatus from flattened cacheStatuses array
+    const actionTickerData = Object.assign({},
+        ...concatenatedCacheStatuses.map(createProcessedCacheStatus)
+    );
 
     return actionTickerData;
 };
@@ -90,12 +93,15 @@ export function* selectedDataChanged(action) {
     console.log('uris', uris);
 
     // get the json data from making request, then process the json
-    const jsonResponses = yield uris.map(uri => fetchJson(uri));
-    const processedJson = jsonResponses.map(jsonResp => processQuandlJsonIDB(jsonResp, startDate, endDate));
+    const jsonResponses = yield uris.map(uri => call(fetchJson, uri));
+    // processingJson is not async, but using yield instead for easier test
+    const processedJsons = yield jsonResponses.map(jsonResp =>
+        call(processQuandlJsonIDB, jsonResp, startDate, endDate)
+    );
     // combine processedJson into 1 object
-    const combinedProcessedJson = mergeWith({}, ...processedJson, mergeWithArrayConcat);
+    const combinedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
     const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
-    console.log('jsonresp', jsonResponses, processedJson, combinedProcessedJson);
+    console.log('jsonresp', jsonResponses, processedJsons, combinedProcessedJson);
 
     const createProcessedCacheStatus = status => {
         const key = status.tickerName;
