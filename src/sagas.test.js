@@ -6,10 +6,11 @@ import * as actionCreators from './actionCreators';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
+import mergeWith from 'lodash.mergewith';
 
 import { call, put, takeEvery, takeLatest, select } from 'redux-saga/effects';
 import {
-    getApiKey, getServerHost, getSelectedDate, fetchJson,
+    getApiKey, getServerHost, getSelectedDate, fetchJson, mergeWithArrayConcat,
     getSelectedTickers, getStoredStockData, convertCacheStatusesToActionTickerData,
     selectedDataChanged
 } from './sagas';
@@ -21,6 +22,38 @@ const amznData = [
     { date: "20170109", ticker: 'AMZN', open: 25, close: 9999 },
     { date: "20170112", ticker: 'AMZN', open: 35, close: 456 },
     { date: "20170113", ticker: 'AMZN', open: 42, close: 12 },
+];
+
+const amznDataGap1 = [
+    { date: "20170110", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170111", ticker: 'AMZN', open: 25, close: 9999 },
+];
+
+const amznDataBefore = [
+    { date: "20170101", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170102", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170103", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170104", ticker: 'AMZN', open: 25, close: 9999 },
+
+    { date: "20170105", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170106", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170107", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170108", ticker: 'AMZN', open: 25, close: 9999 },
+];
+
+const amznDataGapBeforeAfter = [
+    { date: "20170114", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170115", ticker: 'AMZN', open: 35, close: 456 },
+    { date: "20170116", ticker: 'AMZN', open: 42, close: 12 },
+];
+
+const amznDataAfter = [
+    { date: "20170117", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170118", ticker: 'AMZN', open: 35, close: 456 },
+    { date: "20170119", ticker: 'AMZN', open: 42, close: 12 },
+    { date: "20170120", ticker: 'AMZN', open: 25, close: 9999 },
+    { date: "20170121", ticker: 'AMZN', open: 35, close: 456 },
+    { date: "20170122", ticker: 'AMZN', open: 42, close: 12 },
 ];
 
 const msftData = [
@@ -43,6 +76,23 @@ const googData = [
     { date: "20170112", ticker: 'GOOG', open: 16, close: 318 },
 ];
 
+const googDataGap1 = [
+    { date: "20170104", ticker: 'GOOG', open: 50, close: 100 },
+    { date: "20170105", ticker: 'GOOG', open: 75, close: 551 }
+];
+
+const googDataGap2 = [
+    { date: "20170109", ticker: 'GOOG', open: 50, close: 100 }
+];
+
+const googDataGap3 = [
+    { date: "20170113", ticker: 'GOOG', open: 50, close: 100 },
+    { date: "20170114", ticker: 'GOOG', open: 75, close: 551 },
+    { date: "20170115", ticker: 'GOOG', open: 75, close: 551 },
+    { date: "20170116", ticker: 'GOOG', open: 75, close: 551 },
+    { date: "20170117", ticker: 'GOOG', open: 75, close: 551 },
+];
+
 const fbData = [
     { date: "20170106", ticker: 'FB', open: 1, close: 151 },
     { date: "20170107", ticker: 'FB', open: 2, close: 121 },
@@ -50,6 +100,29 @@ const fbData = [
     { date: "20170110", ticker: 'FB', open: 4, close: 324 },
     { date: "20170111", ticker: 'FB', open: 5, close: 435 },
     { date: "20170112", ticker: 'FB', open: 6, close: 123 },
+];
+
+const aaplData = [
+    { date: "20170101", ticker: 'AAPL', open: 1, close: 151 },
+    { date: "20170102", ticker: 'AAPL', open: 2, close: 121 },
+    { date: "20170103", ticker: 'AAPL', open: 4, close: 324 },
+    { date: "20170104", ticker: 'AAPL', open: 5, close: 435 },
+    { date: "20170105", ticker: 'AAPL', open: 6, close: 123 },
+
+    { date: "20170106", ticker: 'AAPL', open: 1, close: 151 },
+    { date: "20170107", ticker: 'AAPL', open: 2, close: 121 },
+    { date: "20170108", ticker: 'AAPL', open: 2, close: 121 },
+    { date: "20170109", ticker: 'AAPL', open: 2, close: 121 },
+    { date: "20170110", ticker: 'AAPL', open: 4, close: 324 },
+
+    { date: "20170111", ticker: 'AAPL', open: 5, close: 435 },
+    { date: "20170112", ticker: 'AAPL', open: 6, close: 123 },
+    { date: "20170113", ticker: 'AAPL', open: 1, close: 151 },
+    { date: "20170114", ticker: 'AAPL', open: 2, close: 121 },
+    { date: "20170115", ticker: 'AAPL', open: 4, close: 324 },
+
+    { date: "20170116", ticker: 'AAPL', open: 5, close: 435 },
+    { date: "20170117", ticker: 'AAPL', open: 6, close: 123 },
 ];
 
 describe('convertCacheStatusesToActionTickerData test', () => {
@@ -172,7 +245,7 @@ describe('SAGA selectedDataChanged test', () => {
     it('works properly with partially cached ticker request', (done) => {
         const gen = selectedDataChanged();
         const requestStartDate = '20170104';
-        const requestEndDate = '20170115';
+        const requestEndDate = '20170117';
         const selectedData = createSelectedDataVariables(requestStartDate, requestEndDate, 'GOOG');
 
         testSelectedDataChangedUntilGetCache(gen, selectedData);
@@ -204,25 +277,140 @@ describe('SAGA selectedDataChanged test', () => {
         expect(gen.next(jsonResponses).value).to.deep.equal([]);
 
         const processedJsons = [
-            {
-                GOOG: [
-                    { date: '20170104', ticker: 'GOOG', adj_open: 78.58, adj_high: 78.93, adj_low: 77.7, adj_close: 78.45, adj_volume: 18177475 },
-                    { date: '20170105', ticker: 'GOOG', adj_open: 77.98, adj_high: 79.2455, adj_low: 76.86, adj_close: 77.19, adj_volume: 26452191 }
-                ]
-            },
-            {
-                GOOG: [
-                    { date: '20170109', ticker: 'GOOG', adj_open: 78.58, adj_high: 78.93, adj_low: 77.7, adj_close: 78.45, adj_volume: 18177475 }
-                ]
-            },
-            {
-                GOOG: [
-                    { date: '20170113', ticker: 'GOOG', adj_open: 78.58, adj_high: 78.93, adj_low: 77.7, adj_close: 78.45, adj_volume: 18177475 },
-                    { date: '20170114', ticker: 'GOOG', adj_open: 77.98, adj_high: 79.2455, adj_low: 76.86, adj_close: 77.19, adj_volume: 26452191 },
-                    { date: '20170115', ticker: 'GOOG', adj_open: 77.98, adj_high: 79.2455, adj_low: 76.86, adj_close: 77.19, adj_volume: 26452191 }
-                ]
-            }
+            { GOOG: googDataGap1.slice(0) },
+            { GOOG: googDataGap2.slice(0) },
+            { GOOG: googDataGap3.slice(0) }
         ];
+
+        const mergedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
+        const mergedProcessedJsonData = mergedProcessedJson['GOOG'];
+        // sort partial data
+        mergedProcessedJson['GOOG'].sort(stockDataComparer);
+
+        const nextGen = gen.next(processedJsons).value;
+        expect(nextGen).to.deep.equal(
+            call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate)
+        );
+
+        done();
+    });
+
+    it('works properly with non cached ticker request', (done) => {
+        const gen = selectedDataChanged();
+        const requestStartDate = '20170115';
+        const requestEndDate = '20170125';
+        const selectedData = createSelectedDataVariables(requestStartDate, requestEndDate, 'AMZN');
+
+        testSelectedDataChangedUntilGetCache(gen, selectedData);
+
+        const expectedDateGaps = [
+            dateGapFactory(requestStartDate, requestEndDate)
+        ];
+
+        const nonCachedStatuses = [
+            cacheStatusFactory('AMZN', CACHE_AVAILABILITY.NONE, [], expectedDateGaps)
+        ];
+
+        const uris = generateUrisFromCacheStatuses(nonCachedStatuses, serverHost, apiKey);
+        const urisPromises = uris.map(uri => call(fetchJson, uri));
+
+        // make sure the request to fetchJSON is correct
+        expect(gen.next(nonCachedStatuses).value).to.deep.equal(urisPromises);
+
+        const jsonResponses = [];
+        expect(gen.next(jsonResponses).value).to.deep.equal([]);
+
+        const processedJsons = [
+            { AMZN: amznDataAfter.slice(0).sort(stockDataComparer) }
+        ];
+
+        const mergedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
+        const mergedProcessedJsonData = mergedProcessedJson['AMZN'];
+
+        const nextGen = gen.next(processedJsons).value;
+        expect(nextGen).to.deep.equal(
+            call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate)
+        );
+
+        done();
+    });
+
+    it('works properly with mixed cache statuses and multiple tickers request', (done) => {
+        const gen = selectedDataChanged();
+        const requestStartDate = '20170101';
+        const requestEndDate = '20170117';
+        const selectedData = createSelectedDataVariables(requestStartDate, requestEndDate, 'GOOG', 'AMZN', 'AAPL');
+
+        testSelectedDataChangedUntilGetCache(gen, selectedData);
+
+        const combinedGoogData = [...googData, ...googDataGap1, ...googDataGap2, ...googDataGap3];
+        const expectedDateGapsGoog = [];
+        const combinedAmznData = [...amznData, ...amznDataAfter];
+        const expectedDateGapsAmzn = [
+            dateGapFactory('20170101', '20170108'),
+            dateGapFactory('20170110', '20170111'),
+            dateGapFactory('20170114', '20170116')
+        ];
+        const expectedDateGapsAapl = [
+            dateGapFactory('20170101', '20170117')
+        ];
+
+        const cachedStockStatuses = [
+            cacheStatusFactory(
+                'GOOG',
+                CACHE_AVAILABILITY.FULL,
+                combinedGoogData.sort(stockDataComparer).filter(
+                    data => moment(data.date).isBetween(requestStartDate, requestEndDate, 'days', '[]')
+                ),
+                expectedDateGapsGoog
+            ),
+            cacheStatusFactory(
+                'AMZN',
+                CACHE_AVAILABILITY.PARTIAL,
+                combinedAmznData.sort(stockDataComparer).filter(
+                    data => moment(data.date).isBetween(requestStartDate, requestEndDate, 'days', '[]')
+                ),
+                expectedDateGapsAmzn
+            ),
+            cacheStatusFactory(
+                'AAPL',
+                CACHE_AVAILABILITY.NONE,
+                [],
+                expectedDateGapsAapl
+            )
+        ];
+
+        const uris = generateUrisFromCacheStatuses(cachedStockStatuses, serverHost, apiKey);
+        const urisPromises = uris.map(uri => call(fetchJson, uri));
+
+        // make sure the request to fetchJSON is correct
+        expect(gen.next(cachedStockStatuses).value).to.deep.equal(urisPromises);
+
+        const jsonResponses = [];
+        expect(gen.next(jsonResponses).value).to.deep.equal([]);
+
+        const processedJsons = [
+            { AMZN: amznDataBefore.slice(0) },
+            { AMZN: amznDataGap1.slice(0) },
+            { AMZN: amznDataGapBeforeAfter.slice(0) },
+            { AAPL: aaplData.slice(0).sort(stockDataComparer) }
+        ];
+
+        const fullyCachedData = {
+            'GOOG': combinedGoogData
+        };
+
+        const mergedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
+        const mergedAllRequestedData = mergeWith({}, combinedGoogData, mergedProcessedJson, mergeWithArrayConcat);
+        // sort partial data
+        mergedProcessedJson['AMZN'].sort(stockDataComparer);
+
+        const mergedProcessedJsonData = [].concat(...Object.values(mergedProcessedJson));
+
+        const nextGen = gen.next(processedJsons).value;
+        expect(nextGen).to.deep.equal(
+            call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate)
+        );
 
         done();
     });

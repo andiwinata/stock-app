@@ -4,11 +4,11 @@ import * as actionCreators from './actionCreators';
 import * as actionTypes from './actionTypes';
 
 import { processQuandlJson, processQuandlJsonIDB } from './api/tickerDataProcessor';
-import { determineCachedStockDataStatus, CACHE_AVAILABILITY } from './storeFunctions';
+import { determineCachedStockDataStatus } from './storeFunctions';
 import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses, generateUrisFromCacheStatuses } from './api/requestFunctions';
 
 import { quandlIDB } from './cache/quandlIDBInstance';
-import { stockDataComparer } from './cache/quandlIDB';
+import { stockDataComparer, CACHE_AVAILABILITY } from './cache/quandlIDB';
 
 import merge from 'lodash.merge';
 import mergeWith from 'lodash.mergewith';
@@ -100,22 +100,10 @@ export function* selectedDataChanged(action) {
     );
     // combine processedJson into 1 object
     const combinedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
-    const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
     console.log('jsonresp', jsonResponses, processedJsons, combinedProcessedJson);
 
-    const createProcessedCacheStatus = status => {
-        const key = status.tickerName;
-        const val = status.cacheData;
-        return { key: val }
-    };
-
     // concatenate the data into one
-    // TODO REMOVE!!!!!!!!!!!!
-    const tickerData = Object.assign(
-        {},
-        ...fullyCachedStatuses.map(createProcessedCacheStatus),
-        ...partiallyCachedStatuses.map(createProcessedCacheStatus)
-    );
+    const tickerData = convertCacheStatusesToActionTickerData(fullyCachedStatuses, partiallyCachedStatuses);
 
     // merge cache with responses
     mergeWith(tickerData, combinedProcessedJson, mergeWithArrayConcat);
@@ -126,6 +114,9 @@ export function* selectedDataChanged(action) {
     const partiallyCachedTickerNames = partiallyCachedStatuses.forEach(status => {
         tickerData[status.tickerName].sort(stockDataComparer);
     });
+
+    // get array of data to be passed in for IDB cache
+    const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
 
     console.log('combined processed json data', combinedProcessedJsonData, startDate, endDate);
     yield call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate);
