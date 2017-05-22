@@ -1,5 +1,5 @@
 import createStockIDB, {
-    applyMiddleware, defaultConfig,
+    applyMiddleware, defaultConfig, stockIDBDateFormat,
     CACHE_AVAILABILITY, stockDataComparer, cacheStatusFactory, dateGapFactory
 } from './stockIDB';
 import moment from 'moment';
@@ -38,7 +38,8 @@ export default function createQuandlIDB(overrider) {
                 return next(tickerData);
             }
 
-            const dateFormat = quandlIDBConfig.dateFormat;
+            console.log('getting into put middleware');
+            const dateFormat = stockIDBDateFormat;
 
             // sort first
             tickerData.sort(stockDataComparer);
@@ -46,6 +47,10 @@ export default function createQuandlIDB(overrider) {
             // if there is no startDate or endDate, assume the first and last both are start and end date
             startDate = startDate || tickerData[0].date;
             endDate = endDate || tickerData[tickerData.length - 1].date;
+
+            // strip off time (can be moment obj or string)
+            startDate = moment(startDate).startOf('day');
+            endDate = moment(endDate).startOf('day');
 
             let currentTickerDataId = 0;
             const filledTickerData = [];
@@ -55,11 +60,13 @@ export default function createQuandlIDB(overrider) {
 
             // iterate through startDate and endDate (inclusive)
             // http://stackoverflow.com/questions/17163809/iterate-through-a-range-of-dates-in-nodejs
-            for (let currDate = moment(startDate); currDate.diff(endDate, 'days') <= 0; currDate.add(1, 'days')) {
+            for (let currDate = moment(startDate); currDate.diff(endDate, 'days') <= 0; currDate.add(1, 'day')) {
                 const currentTickerData = tickerData[currentTickerDataId];
 
+                console.log('currdate', currDate.format(dateFormat), 'tickerdate', currentTickerData ? currentTickerData.date : 'NO TICKER DATA');
                 // if the index surpass length of the tickerData, just fill currentDate with empty data
                 if (!currentTickerData) {
+                    console.log('filling empty ticker data for', currDate.format(dateFormat));
                     filledTickerData.push(
                         createEmptyTickerData(tickerName, currDate.format(dateFormat))
                     );
@@ -70,7 +77,8 @@ export default function createQuandlIDB(overrider) {
                     throw new Error(`There shouldn't be multiple ticker (tickerName) when using putMiddleware!`);
                 }
 
-                const dateDiffWithCurrentTickerData = currDate.diff(currentTickerData.date, 'days');
+                const dateDiffWithCurrentTickerData = currDate.diff(currentTickerData.date, 'day');
+                console.log('datediff', dateDiffWithCurrentTickerData);
 
                 if (dateDiffWithCurrentTickerData === 0) {
                     filledTickerData.push(currentTickerData);
@@ -81,6 +89,7 @@ export default function createQuandlIDB(overrider) {
                 } else {
                     // current tickerData.date jumps from previous date, so there is a gap
                     // fill it with empty data until the date sync up again
+                    console.log('filling empty ticker data for', currDate.format(dateFormat));
                     filledTickerData.push(
                         createEmptyTickerData(tickerName, currDate.format(dateFormat))
                     );

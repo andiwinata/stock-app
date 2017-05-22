@@ -118,8 +118,10 @@ export function* selectedDataChanged(action) {
     // get array of data to be passed in for IDB cache
     const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
 
-    console.log('combined processed json data', combinedProcessedJsonData, startDate, endDate);
-    yield call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate);
+    console.log('combined processed json data', combinedProcessedJsonData); //, startDate, endDate);
+    // need to put based on separated ticker
+    const addedKeys = yield call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate);
+    console.log('addedKeys', addedKeys);
 
     // yield [
     //     // send put request with new data

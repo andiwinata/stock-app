@@ -16,6 +16,8 @@ export const defaultConfig = {
     tickerDateIndexName: 'tickerDate'
 };
 
+export const stockIDBDateFormat = 'YYYYMMDD'; // using iso
+
 export const CACHE_AVAILABILITY = {
     FULL: 'FULL',
     PARTIAL: 'PARTIAL',
@@ -65,7 +67,7 @@ export default function createStockIDB(overrider, configOverride) {
     };
 
     let _db = null;
-    const isoDateFormat = 'YYYYMMDD';
+    const isoDateFormat = stockIDBDateFormat;
     const config = Object.assign({}, defaultConfig, configOverride);
 
     function _assignLegacyIndexedDB() {

@@ -135,9 +135,9 @@ describe('quandlIDB test', () => {
         testPutTickerData(done, 'GOOG', googData, startDate, endDate);
     });
 
-    it(`quandlIDB.putTickerData put stockData by filling empty date with empty data 2`, done => {
-        const startDate = '20170426';
-        const endDate = '20170517';
+    it(`quandlIDB.putTickerData put stockData by filling empty date with empty data 2 ignoring time`, done => {
+        const startDate = '2017-04-26T23:52:18.954';
+        const endDate = '2017-05-17T00:12:18.954';
 
         testPutTickerData(done, 'AAN', aanData, startDate, endDate);
     });
