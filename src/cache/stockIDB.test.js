@@ -1,5 +1,5 @@
 import createStockIDB, {
-    applyMiddleware, stockDataComparer, dateGapComparer,
+    applyMiddleware, stockDataComparerDate, dateGapComparer,
     CACHE_AVAILABILITY, dateGapFactory, cacheStatusFactory
 } from './stockIDB';
 import { expect } from 'chai';
@@ -116,7 +116,7 @@ describe('stockIDB test', () => {
         stockIDB.getTickerData('AMZN', '20170109', '20170113')
             .then(tickerData => {
                 // sort the data first
-                const sortedAmznData = amznData.sort(stockDataComparer);
+                const sortedAmznData = amznData.sort(stockDataComparerDate);
 
                 expect(tickerData).to.deep.equal(amznData);
                 done();
@@ -129,7 +129,7 @@ describe('stockIDB test', () => {
         clone.getTickerData('AMZN', '20170109', '20170113')
             .then(tickerData => {
                 // sort the data first
-                const sortedAmznData = amznData.sort(stockDataComparer);
+                const sortedAmznData = amznData.sort(stockDataComparerDate);
 
                 expect(tickerData).to.deep.equal(amznData);
                 done();
@@ -161,7 +161,7 @@ describe('stockIDB test', () => {
                     { date: "20170107", ticker: 'MSFT', open: 11, close: 312 }
                 ];
                 // sort again since indexedDB will sort it
-                expectedTickerResult.sort(stockDataComparer);
+                expectedTickerResult.sort(stockDataComparerDate);
 
                 const expectedResult = cacheStatusFactory(
                     'MSFT',
@@ -184,7 +184,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'MSFT',
                     CACHE_AVAILABILITY.PARTIAL,
-                    msftData.sort(stockDataComparer),
+                    msftData.sort(stockDataComparerDate),
                     expectedDateGaps
                 );
 
@@ -203,7 +203,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'MSFT',
                     CACHE_AVAILABILITY.PARTIAL,
-                    msftData.sort(stockDataComparer),
+                    msftData.sort(stockDataComparerDate),
                     expectedDateGaps
                 );
 
@@ -223,7 +223,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'MSFT',
                     CACHE_AVAILABILITY.PARTIAL,
-                    msftData.sort(stockDataComparer),
+                    msftData.sort(stockDataComparerDate),
                     expectedDateGaps
                 );
 
@@ -242,7 +242,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'GOOG',
                     CACHE_AVAILABILITY.PARTIAL,
-                    googData.sort(stockDataComparer).filter(
+                    googData.sort(stockDataComparerDate).filter(
                         data => moment(data.date).isBetween('20170101', '20170108', 'days', '[]')
                     ),
                     expectedDateGaps
@@ -264,7 +264,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'GOOG',
                     CACHE_AVAILABILITY.PARTIAL,
-                    googData.sort(stockDataComparer),
+                    googData.sort(stockDataComparerDate),
                     expectedDateGaps
                 );
 
@@ -285,7 +285,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'GOOG',
                     CACHE_AVAILABILITY.PARTIAL,
-                    googData.sort(stockDataComparer),
+                    googData.sort(stockDataComparerDate),
                     expectedDateGaps
                 );
 
@@ -306,7 +306,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'GOOG',
                     CACHE_AVAILABILITY.PARTIAL,
-                    googData.sort(stockDataComparer),
+                    googData.sort(stockDataComparerDate),
                     expectedDateGaps
                 );
 
@@ -328,7 +328,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'GOOG',
                     CACHE_AVAILABILITY.PARTIAL,
-                    googData.sort(stockDataComparer),
+                    googData.sort(stockDataComparerDate),
                     expectedDateGaps
                 );
 
@@ -361,7 +361,7 @@ describe('stockIDB test', () => {
                     { date: "20170107", ticker: 'MSFT', open: 11, close: 312 },
                 ];
 
-                expect(tickerData).to.deep.equal(expectedResult.sort(stockDataComparer));
+                expect(tickerData).to.deep.equal(expectedResult.sort(stockDataComparerDate));
                 done();
             }).catch(catchErrorAsync(done, 'Middleware getTickerData error'));
     });
@@ -399,7 +399,7 @@ describe('stockIDB test', () => {
                     { date: "20170112", ticker: 'GOOG', open: 16, close: 318 },
                 ];
 
-                expect(tickerData).to.deep.equal(expectedResult.sort(stockDataComparer));
+                expect(tickerData).to.deep.equal(expectedResult.sort(stockDataComparerDate));
                 done();
             }).catch(catchErrorAsync(done, 'Middleware getTickerData error'));
     });
@@ -464,7 +464,7 @@ describe('stockIDB test', () => {
         };
 
         const testGetMiddleware = tickerData => {
-            expect(tickerData).to.deep.equal(putMiddlewareData.sort(stockDataComparer));
+            expect(tickerData).to.deep.equal(putMiddlewareData.sort(stockDataComparerDate));
             done();
         };
 
@@ -512,7 +512,7 @@ describe('stockIDB test', () => {
                 const expectedResult = cacheStatusFactory(
                     'TEST_DIFFERENT_ISO_FORMAT',
                     CACHE_AVAILABILITY.PARTIAL,
-                    formattedTestData.sort(stockDataComparer),
+                    formattedTestData.sort(stockDataComparerDate),
                     expectedDateGaps
                 );
 

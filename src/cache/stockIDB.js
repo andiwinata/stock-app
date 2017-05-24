@@ -4,7 +4,7 @@ const isString = (str) => {
     return (typeof str === 'string' || str instanceof String);
 };
 
-export const stockDataComparer = (a, b) => {
+export const stockDataComparerDate = (a, b) => {
     return moment(a.date).diff(b.date, 'days');
 };
 

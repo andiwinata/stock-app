@@ -1,10 +1,27 @@
 import createStockIDB, {
     applyMiddleware, defaultConfig, stockIDBDateFormat,
-    CACHE_AVAILABILITY, stockDataComparer, cacheStatusFactory, dateGapFactory
+    CACHE_AVAILABILITY, stockDataComparerDate, cacheStatusFactory, dateGapFactory
 } from './stockIDB';
 import moment from 'moment';
 
-export { CACHE_AVAILABILITY, stockDataComparer, cacheStatusFactory, dateGapFactory };
+export { CACHE_AVAILABILITY, stockDataComparerDate, cacheStatusFactory, dateGapFactory };
+
+/**
+ * Sort stockData by ticker and date
+ * with ticker as precedence 
+ * https://stackoverflow.com/questions/6129952/javascript-sort-array-by-two-fields
+ * 
+ * @param {any} stockData 
+ * @param {any} stockData
+ * @returns {Number}
+ */
+export function stockDataComparerTickerDate(a, b) {
+    const tickerA = a.ticker.toLowerCase();
+    const tickerB = b.ticker.toLowerCase();
+
+    const tickerComparison = tickerA < tickerB ? -1 : tickerA > tickerB ? 1 : 0;
+    return tickerComparison || moment(a.date).diff(b.date, 'days');
+};
 
 export default function createQuandlIDB(overrider) {
     let quandlIDBInstance = null;
@@ -42,7 +59,7 @@ export default function createQuandlIDB(overrider) {
             const dateFormat = stockIDBDateFormat;
 
             // sort first
-            tickerData.sort(stockDataComparer);
+            tickerData.sort(stockDataComparerTickerDate);
 
             // if there is no startDate or endDate, assume the first and last both are start and end date
             startDate = startDate || tickerData[0].date;
@@ -52,49 +69,63 @@ export default function createQuandlIDB(overrider) {
             startDate = moment(startDate).startOf('day');
             endDate = moment(endDate).startOf('day');
 
-            let currentTickerDataId = 0;
+            // let currentTickerDataId = 0;
             const filledTickerData = [];
 
-            // set the default tickerName to do validation checking later on
+            /**
+             * Populating filledTickerData which is an array containing tickerData +
+             * emptyData for any missing data in the dateRange (startDate until endDate)
+             * 
+             * @param {*} currentTickerName filling data for which ticker name
+             * @param {*} tickerDataIndex filling data starting from which index of tickerData
+             */
+            const populateFilledTickerData = (currentTickerName, tickerDataIndex) => {
+                let currentTickerData;
+
+                // iterate through startDate and endDate (inclusive)
+                // http://stackoverflow.com/questions/17163809/iterate-through-a-range-of-dates-in-nodejs
+                for (let currDate = moment(startDate); currDate.diff(endDate, 'days') <= 0; currDate.add(1, 'day')) {
+                    currentTickerData = tickerData[tickerDataIndex];
+
+                    // if the index surpass length of the tickerData,
+                    // or if the next data is different from the current ticker
+                    // just fill currentDate with empty data until we finish the loop
+                    if (!currentTickerData || currentTickerData.ticker !== currentTickerName) {
+                        filledTickerData.push(
+                            createEmptyTickerData(currentTickerName, currDate.format(dateFormat))
+                        );
+                        continue;
+                    }
+
+                    const dateDiffWithCurrentTickerData = currDate.diff(currentTickerData.date, 'day');
+
+                    if (dateDiffWithCurrentTickerData === 0) {
+                        filledTickerData.push(currentTickerData);
+                        tickerDataIndex++;
+                    } else if (dateDiffWithCurrentTickerData > 0) {
+                        // if current ticker data is earlier than currDate, something wrong
+                        throw new Error('tickerData must be sorted!')
+                    } else {
+                        // current tickerData.date jumps from previous date, so there is a gap
+                        // fill it with empty data until the date sync up again
+                        filledTickerData.push(
+                            createEmptyTickerData(currentTickerName, currDate.format(dateFormat))
+                        );
+                    }
+                }
+
+                // if after finishing loop, there is still next data
+                // and the next data has different ticker name
+                // loop from beginning again for next ticker, starting from next data
+                if (currentTickerData && currentTickerData.ticker !== currentTickerName) {
+                    populateFilledTickerData(currentTickerData.ticker, tickerDataIndex);
+                }
+            };
+
+            // set the first tickerName
             const tickerName = tickerData[0].ticker;
 
-            // iterate through startDate and endDate (inclusive)
-            // http://stackoverflow.com/questions/17163809/iterate-through-a-range-of-dates-in-nodejs
-            for (let currDate = moment(startDate); currDate.diff(endDate, 'days') <= 0; currDate.add(1, 'day')) {
-                const currentTickerData = tickerData[currentTickerDataId];
-
-                console.log('currdate', currDate.format(dateFormat), 'tickerdate', currentTickerData ? currentTickerData.date : 'NO TICKER DATA');
-                // if the index surpass length of the tickerData, just fill currentDate with empty data
-                if (!currentTickerData) {
-                    console.log('filling empty ticker data for', currDate.format(dateFormat));
-                    filledTickerData.push(
-                        createEmptyTickerData(tickerName, currDate.format(dateFormat))
-                    );
-                    continue;
-                }
-
-                if (currentTickerData.ticker !== tickerName) {
-                    throw new Error(`There shouldn't be multiple ticker (tickerName) when using putMiddleware!`);
-                }
-
-                const dateDiffWithCurrentTickerData = currDate.diff(currentTickerData.date, 'day');
-                console.log('datediff', dateDiffWithCurrentTickerData);
-
-                if (dateDiffWithCurrentTickerData === 0) {
-                    filledTickerData.push(currentTickerData);
-                    currentTickerDataId++;
-                } else if (dateDiffWithCurrentTickerData > 0) {
-                    // if current ticker data is earlier than currDate, something wrong
-                    throw new Error('tickerData must be sorted!')
-                } else {
-                    // current tickerData.date jumps from previous date, so there is a gap
-                    // fill it with empty data until the date sync up again
-                    console.log('filling empty ticker data for', currDate.format(dateFormat));
-                    filledTickerData.push(
-                        createEmptyTickerData(tickerName, currDate.format(dateFormat))
-                    );
-                }
-            }
+            populateFilledTickerData(tickerName, 0);
 
             // pass the filledTickerData to next function
             return next(filledTickerData);

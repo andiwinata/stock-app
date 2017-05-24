@@ -8,7 +8,7 @@ import { determineCachedStockDataStatus } from './storeFunctions';
 import { constructRetrieveTickerDataUri, getRequestUrisForCacheStatuses, generateUrisFromCacheStatuses } from './api/requestFunctions';
 
 import { quandlIDB } from './cache/quandlIDBInstance';
-import { stockDataComparer, CACHE_AVAILABILITY } from './cache/quandlIDB';
+import { stockDataComparerDate, CACHE_AVAILABILITY } from './cache/quandlIDB';
 
 import merge from 'lodash.merge';
 import mergeWith from 'lodash.mergewith';
@@ -80,11 +80,12 @@ export function* selectedDataChanged(action) {
 
     // meaning everything is cached
     if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
-        yield put(actionCreators.tickerDataReceived(
-            convertCacheStatusesToActionTickerData(fullyCachedStatuses),
-            selectedTickersObj,
-            dateRange
-        ));
+        console.log('FULLY CACHED returned');
+        // yield put(actionCreators.tickerDataReceived(
+        //     convertCacheStatusesToActionTickerData(fullyCachedStatuses),
+        //     selectedTickersObj,
+        //     dateRange
+        // ));
         return;
     }
 
@@ -112,14 +113,13 @@ export function* selectedDataChanged(action) {
 
     // sort the merge of partially cached data
     const partiallyCachedTickerNames = partiallyCachedStatuses.forEach(status => {
-        tickerData[status.tickerName].sort(stockDataComparer);
+        tickerData[status.tickerName].sort(stockDataComparerDate);
     });
 
     // get array of data to be passed in for IDB cache
     const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
 
     console.log('combined processed json data', combinedProcessedJsonData); //, startDate, endDate);
-    // need to put based on separated ticker
     const addedKeys = yield call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate);
     console.log('addedKeys', addedKeys);
 
