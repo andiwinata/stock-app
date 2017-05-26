@@ -91,6 +91,30 @@ class StockChart extends PureComponent {
         this.chart = new Highcharts.StockChart(options);
     }
 
+    processTickerDataToChartData(tickerData) {
+        const ohlc = [];
+        const volume = [];
+
+        const unixDate = moment(tickerDatum['date']).valueOf();
+
+        tickerData.forEach(tickerDatum => {
+            ohlc.push([
+                unixDate,
+                tickerDatum['adj_open'],
+                tickerDatum['adj_high'],
+                tickerDatum['adj_low'],
+                tickerDatum['adj_close']
+            ]);
+
+            volume.push([
+                unixDate,
+                tickerDatum['adj_volume']
+            ]);
+        });
+
+        return { ohlc, volume };
+    }
+
     componentWillReceiveProps(props) {
         const { startDate, endDate } = props.shownDate;
         // console.log(props.storedStockData, startDate, endDate, props.shownTickers, "!!!!!!!!!!!!!!!!!!!!!!!!!!!xxxxxxxxxxx");
@@ -99,52 +123,65 @@ class StockChart extends PureComponent {
             return;
         }
 
-        // right now just do one ticker
-        const storedTickerData = props.storedStockData[props.shownTickers[0].value].dailyData;
-        // console.log("COMPONENT WILL RECEIVE PROPSS STOCK CHART!!!!!!!!", storedTickerData);
-
-        this.ohlc = [];
-        this.volume = [];
-
-        const dateKeys = Object.keys(storedTickerData);
-        dateKeys.sort((a, b) => {
-            return new Date(a) - new Date(b);
-        });
-
-        dateKeys.forEach((storedDate) => {
-            // date in range inclusive
-            const dateInRange = moment(storedDate).isBetween(startDate, endDate, 'days', '[]');
-
-            if (dateInRange) {
-                const ohlcData = [
-                    moment(storedDate).valueOf(),
-                    storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['open']],
-                    storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['high']],
-                    storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['low']],
-                    storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['close']],
-                ];
-
-                this.ohlc.push(ohlcData);
-
-                const volumeData = [
-                    moment(storedDate).valueOf(),
-                    storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['volume']]
-                ]
-
-                this.volume.push(volumeData);
-            }
-        });
-        // console.log("FINAL DATA", this.ohlc, this.volume, this.ohlc.length);
+        // get ticker data for ticker name (right now only do the first one)
+        const { ohlc, volume } = processTickerDataToChartData(props.shownStockData[props.shownTickers[0]]);
 
         this.chart.series[0].update({
-            data: this.ohlc,
+            data: ohlc,
             name: props.shownTickers[0].value
         }, false);
 
         this.chart.series[1].update({
-            data: this.volume,
+            data: volume,
             name: props.shownTickers[0].value
         });
+
+        // // right now just do one ticker
+        // const storedTickerData = props.storedStockData[props.shownTickers[0].value].dailyData;
+        // // console.log("COMPONENT WILL RECEIVE PROPSS STOCK CHART!!!!!!!!", storedTickerData);
+
+        // this.ohlc = [];
+        // this.volume = [];
+
+        // const dateKeys = Object.keys(storedTickerData);
+        // dateKeys.sort((a, b) => {
+        //     return new Date(a) - new Date(b);
+        // });
+
+        // dateKeys.forEach((storedDate) => {
+        //     // date in range inclusive
+        //     const dateInRange = moment(storedDate).isBetween(startDate, endDate, 'days', '[]');
+
+        //     if (dateInRange) {
+        //         const ohlcData = [
+        //             moment(storedDate).valueOf(),
+        //             storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['open']],
+        //             storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['high']],
+        //             storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['low']],
+        //             storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['close']],
+        //         ];
+
+        //         this.ohlc.push(ohlcData);
+
+        //         const volumeData = [
+        //             moment(storedDate).valueOf(),
+        //             storedTickerData[storedDate][TICKER_DATA_COL_NAME_TO_INDEX['volume']]
+        //         ]
+
+        //         this.volume.push(volumeData);
+        //     }
+        // });
+        // // console.log("FINAL DATA", this.ohlc, this.volume, this.ohlc.length);
+
+        // this.chart.series[0].update({
+        //     data: this.ohlc,
+        //     name: props.shownTickers[0].value
+        // }, false);
+
+        // this.chart.series[1].update({
+        //     data: this.volume,
+        //     name: props.shownTickers[0].value
+        // });
     }
 
     render() {

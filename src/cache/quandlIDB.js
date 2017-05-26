@@ -69,7 +69,6 @@ export default function createQuandlIDB(overrider) {
             startDate = moment(startDate).startOf('day');
             endDate = moment(endDate).startOf('day');
 
-            // let currentTickerDataId = 0;
             const filledTickerData = [];
 
             /**
@@ -124,7 +123,7 @@ export default function createQuandlIDB(overrider) {
 
             // set the first tickerName
             const tickerName = tickerData[0].ticker;
-
+            // then populate first tickerName
             populateFilledTickerData(tickerName, 0);
 
             // pass the filledTickerData to next function
