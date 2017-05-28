@@ -92,12 +92,13 @@ class StockChart extends PureComponent {
     }
 
     processTickerDataToChartData(tickerData) {
+        console.log('process ticker data', tickerData);
         const ohlc = [];
         const volume = [];
 
-        const unixDate = moment(tickerDatum['date']).valueOf();
-
         tickerData.forEach(tickerDatum => {
+            const unixDate = moment(tickerDatum['date']).valueOf();
+            
             ohlc.push([
                 unixDate,
                 tickerDatum['adj_open'],
@@ -115,30 +116,38 @@ class StockChart extends PureComponent {
         return { ohlc, volume };
     }
 
-    componentWillReceiveProps(props) {
-        const { startDate, endDate } = props.shownDate;
-        // console.log(props.storedStockData, startDate, endDate, props.shownTickers, "!!!!!!!!!!!!!!!!!!!!!!!!!!!xxxxxxxxxxx");
+    componentWillReceiveProps(nextProps) {
+        console.log('STOCK CHART PROPS', this.props, nextProps, this.props.shownStockData === nextProps.shownStockData);
+        // don't render new chart unless the data has been changed
+        if (this.props.shownStockData === nextProps.shownStockData) {
+            return;
+        }
 
-        if (!startDate || !endDate || !props.shownTickers || props.shownTickers.length === 0) {
+        console.log('DRAWING STOCK CHART!');
+
+        const { startDate, endDate } = nextProps.shownDate;
+        // console.log(nextProps.storedStockData, startDate, endDate, nextProps.shownTickers, "!!!!!!!!!!!!!!!!!!!!!!!!!!!xxxxxxxxxxx");
+
+        if (!startDate || !endDate || !nextProps.shownTickers || nextProps.shownTickers.length === 0) {
             return;
         }
 
         // get ticker data for ticker name (right now only do the first one)
-        const { ohlc, volume } = processTickerDataToChartData(props.shownStockData[props.shownTickers[0]]);
+        const { ohlc, volume } = this.processTickerDataToChartData(nextProps.shownStockData[nextProps.shownTickers[0].value]);
 
         this.chart.series[0].update({
             data: ohlc,
-            name: props.shownTickers[0].value
+            name: nextProps.shownTickers[0].value
         }, false);
 
         this.chart.series[1].update({
             data: volume,
-            name: props.shownTickers[0].value
+            name: nextProps.shownTickers[0].value
         });
 
         // // right now just do one ticker
-        // const storedTickerData = props.storedStockData[props.shownTickers[0].value].dailyData;
-        // // console.log("COMPONENT WILL RECEIVE PROPSS STOCK CHART!!!!!!!!", storedTickerData);
+        // const storedTickerData = nextProps.storedStockData[nextProps.shownTickers[0].value].dailyData;
+        // // console.log("COMPONENT WILL RECEIVE nextPROPSS STOCK CHART!!!!!!!!", storedTickerData);
 
         // this.ohlc = [];
         // this.volume = [];
@@ -175,12 +184,12 @@ class StockChart extends PureComponent {
 
         // this.chart.series[0].update({
         //     data: this.ohlc,
-        //     name: props.shownTickers[0].value
+        //     name: nextProps.shownTickers[0].value
         // }, false);
 
         // this.chart.series[1].update({
         //     data: this.volume,
-        //     name: props.shownTickers[0].value
+        //     name: nextProps.shownTickers[0].value
         // });
     }
 

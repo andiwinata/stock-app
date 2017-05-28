@@ -71,10 +71,10 @@ export function storedStockData(state = {}, action) {
     }
 }
 
-export function shownStockData(state = [], action) {
-    switch (action.tyoe) {
+export function shownStockData(state = {}, action) {
+    switch (action.type) {
         case actionTypes.TICKER_DATA_RECEIVED:
-            return [];
+            return action.receivedTickerData;
         default:
             return state;        
     }

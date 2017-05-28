@@ -30,6 +30,8 @@ export function cacheStatusFactory(tickerName, cacheAvailability = CACHE_AVAILAB
         throw new TypeError(`dateGaps must contain only dateGap object`);
     }
 
+    console.log('FACTORY', cacheData);
+
     return {
         tickerName,
         cacheAvailability,

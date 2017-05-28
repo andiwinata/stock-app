@@ -81,11 +81,11 @@ export function* selectedDataChanged(action) {
     // meaning everything is cached
     if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
         console.log('FULLY CACHED returned');
-        // yield put(actionCreators.tickerDataReceived(
-        //     convertCacheStatusesToActionTickerData(fullyCachedStatuses),
-        //     selectedTickersObj,
-        //     dateRange
-        // ));
+        yield put(actionCreators.tickerDataReceived(
+            convertCacheStatusesToActionTickerData(fullyCachedStatuses),
+            selectedTickersObj,
+            dateRange
+        ));
         return;
     }
 
@@ -103,10 +103,10 @@ export function* selectedDataChanged(action) {
     const combinedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
     console.log('jsonresp', jsonResponses, processedJsons, combinedProcessedJson);
 
-    // concatenate the data into one
+    // concatenate the cached data into one
     const tickerData = convertCacheStatusesToActionTickerData(fullyCachedStatuses, partiallyCachedStatuses);
 
-    // merge cache with responses
+    // merge cached data with responses data
     mergeWith(tickerData, combinedProcessedJson, mergeWithArrayConcat);
 
     console.log('ticker data', tickerData);
@@ -116,23 +116,23 @@ export function* selectedDataChanged(action) {
         tickerData[status.tickerName].sort(stockDataComparerDate);
     });
 
-    // get array of data to be passed in for IDB cache
+    // get array of responses data to be passed in for IDB cache
     const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
 
     console.log('combined processed json data', combinedProcessedJsonData); //, startDate, endDate);
-    const addedKeys = yield call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate);
-    console.log('addedKeys', addedKeys);
+    // const addedKeys = yield call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate);
+    // console.log('addedKeys', addedKeys);
 
-    // yield [
-    //     // send put request with new data
-    //     put(actionCreators.tickerDataReceived(
-    //         tickerData,
-    //         selectedTickersObj,
-    //         dateRange
-    //     )),
-    //     // put the processed Json to IDB
-    //     call(quandlIDB.putTickerData, tickerData, startDate, endDate)
-    // ];
+    yield [
+        // send put request with new data
+        put(actionCreators.tickerDataReceived(
+            tickerData,
+            selectedTickersObj,
+            dateRange
+        )),
+        // put the processed Json to IDB
+        call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate)
+    ];
 }
 
 function* selectedInfoChanged(action) {
@@ -220,7 +220,7 @@ function* selectedInfoChanged(action) {
 }
 
 export default function* stockAppSaga() {
-    yield takeEvery([actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED], selectedInfoChanged);
+    // yield takeEvery([actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED], selectedInfoChanged);
     yield takeEvery([actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED], selectedDataChanged);
     // yield [
     //     takeEvery(

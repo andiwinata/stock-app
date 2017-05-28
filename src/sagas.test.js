@@ -135,6 +135,15 @@ describe('convertCacheStatusesToActionTickerData test', () => {
     const cacheStatus3 = cacheStatusFactory('GOOG', CACHE_AVAILABILITY.FULL, googData, []);
     const cacheStatus4 = cacheStatusFactory('FB', CACHE_AVAILABILITY.FULL, fbData, []);
 
+    it('works correctly with 1 cacheStatuses without array', () => {
+        const actionTickerData = convertCacheStatusesToActionTickerData(cacheStatus1);
+        const expectedResult = {
+            'MSFT': msftData
+        };
+
+        expect(actionTickerData).to.deep.equal(expectedResult);
+    });
+
     it('works correctly with 1 cacheStatuses with length == 1', () => {
         const actionTickerData = convertCacheStatusesToActionTickerData([cacheStatus1]);
         const expectedResult = {
@@ -230,14 +239,14 @@ describe('SAGA selectedDataChanged test', () => {
             cacheStatusFactory('AMZN', CACHE_AVAILABILITY.FULL, [], [])
         ];
 
-        // const putAction = put(actionCreators.tickerDataReceived(
-        //     convertCacheStatusesToActionTickerData(fullyCachedStatuses),
-        //     selectedData.selectedTickersObj,
-        //     selectedData.dateRange
-        // ));
+        const putAction = put(actionCreators.tickerDataReceived(
+            convertCacheStatusesToActionTickerData(fullyCachedStatuses),
+            selectedData.selectedTickersObj,
+            selectedData.dateRange
+        ));
 
-        // // since all data is fully cached, it should dispatch action
-        // expect(gen.next(fullyCachedStatuses).value).to.deep.equal(putAction);
+        // since all data is fully cached, it should dispatch action
+        expect(gen.next(fullyCachedStatuses).value).to.deep.equal(putAction);
 
         done();
     });
@@ -250,6 +259,10 @@ describe('SAGA selectedDataChanged test', () => {
 
         testSelectedDataChangedUntilGetCache(gen, selectedData);
 
+        const cachedData = googData.sort(stockDataComparerDate).filter(
+            data => moment(data.date).isBetween(requestStartDate, requestEndDate, 'days', '[]')
+        );
+
         const expectedDateGaps = [
             dateGapFactory(requestStartDate, '20170105'),
             dateGapFactory('20170109', '20170109'),
@@ -260,9 +273,7 @@ describe('SAGA selectedDataChanged test', () => {
             cacheStatusFactory(
                 'GOOG',
                 CACHE_AVAILABILITY.PARTIAL,
-                googData.sort(stockDataComparerDate).filter(
-                    data => moment(data.date).isBetween(requestStartDate, requestEndDate, 'days', '[]')
-                ),
+                cachedData,
                 expectedDateGaps
             )
         ];
@@ -284,13 +295,23 @@ describe('SAGA selectedDataChanged test', () => {
 
         const mergedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
         const mergedProcessedJsonData = mergedProcessedJson['GOOG'];
-        // sort partial data
-        mergedProcessedJson['GOOG'].sort(stockDataComparerDate);
 
-        const nextGen = gen.next(processedJsons).value;
-        expect(nextGen).to.deep.equal(
-            call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate)
-        );
+        const allTickerData = mergeWith({}, { GOOG: cachedData }, mergedProcessedJson, mergeWithArrayConcat);
+        // sort partial data
+        allTickerData['GOOG'].sort(stockDataComparerDate);
+
+        // the put action will be dispatched to store        
+        const putAction = put(actionCreators.tickerDataReceived(
+            allTickerData,
+            selectedData.selectedTickersObj,
+            selectedData.dateRange
+        ));
+
+        const nextGenValue = gen.next(processedJsons).value;
+        expect(nextGenValue).to.deep.equal([
+            putAction,
+            call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate),
+        ]);
 
         done();
     });
@@ -324,13 +345,22 @@ describe('SAGA selectedDataChanged test', () => {
             { AMZN: amznDataAfter.slice(0).sort(stockDataComparerDate) }
         ];
 
+        // since there is no cached data, processedJson = allTickerData
         const mergedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
         const mergedProcessedJsonData = mergedProcessedJson['AMZN'];
 
-        const nextGen = gen.next(processedJsons).value;
-        expect(nextGen).to.deep.equal(
+        // the put action will be dispatched to store        
+        const putAction = put(actionCreators.tickerDataReceived(
+            mergedProcessedJson,
+            selectedData.selectedTickersObj,
+            selectedData.dateRange
+        ));
+
+        const nextGenValue = gen.next(processedJsons).value;
+        expect(nextGenValue).to.deep.equal([
+            putAction,
             call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate)
-        );
+        ]);
 
         done();
     });
@@ -346,6 +376,14 @@ describe('SAGA selectedDataChanged test', () => {
         const combinedGoogData = [...googData, ...googDataGap1, ...googDataGap2, ...googDataGap3];
         const expectedDateGapsGoog = [];
         const combinedAmznData = [...amznData, ...amznDataAfter];
+
+        const cachedGoogData = combinedGoogData.sort(stockDataComparerDate).filter(
+            data => moment(data.date).isBetween(requestStartDate, requestEndDate, 'days', '[]')
+        );
+        const cachedAmznData = combinedAmznData.sort(stockDataComparerDate).filter(
+            data => moment(data.date).isBetween(requestStartDate, requestEndDate, 'days', '[]')
+        );
+
         const expectedDateGapsAmzn = [
             dateGapFactory('20170101', '20170108'),
             dateGapFactory('20170110', '20170111'),
@@ -359,17 +397,13 @@ describe('SAGA selectedDataChanged test', () => {
             cacheStatusFactory(
                 'GOOG',
                 CACHE_AVAILABILITY.FULL,
-                combinedGoogData.sort(stockDataComparerDate).filter(
-                    data => moment(data.date).isBetween(requestStartDate, requestEndDate, 'days', '[]')
-                ),
+                cachedGoogData,
                 expectedDateGapsGoog
             ),
             cacheStatusFactory(
                 'AMZN',
                 CACHE_AVAILABILITY.PARTIAL,
-                combinedAmznData.sort(stockDataComparerDate).filter(
-                    data => moment(data.date).isBetween(requestStartDate, requestEndDate, 'days', '[]')
-                ),
+                cachedAmznData,
                 expectedDateGapsAmzn
             ),
             cacheStatusFactory(
@@ -396,21 +430,32 @@ describe('SAGA selectedDataChanged test', () => {
             { AAPL: aaplData.slice(0).sort(stockDataComparerDate) }
         ];
 
-        const fullyCachedData = {
-            'GOOG': combinedGoogData
+        const cachedData = {
+            'GOOG': cachedGoogData,
+            'AMZN': cachedAmznData
         };
 
         const mergedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
         const mergedAllRequestedData = mergeWith({}, combinedGoogData, mergedProcessedJson, mergeWithArrayConcat);
+
+        const allTickerData = mergeWith({}, cachedData, mergedProcessedJson, mergeWithArrayConcat);
         // sort partial data
-        mergedProcessedJson['AMZN'].sort(stockDataComparerDate);
+        allTickerData['AMZN'].sort(stockDataComparerDate);
+
+        // the put action will be dispatched to store        
+        const putAction = put(actionCreators.tickerDataReceived(
+            allTickerData,
+            selectedData.selectedTickersObj,
+            selectedData.dateRange
+        ));
 
         const mergedProcessedJsonData = [].concat(...Object.values(mergedProcessedJson));
 
-        const nextGen = gen.next(processedJsons).value;
-        expect(nextGen).to.deep.equal(
+        const nextGenValue = gen.next(processedJsons).value;
+        expect(nextGenValue).to.deep.equal([
+            putAction,
             call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate)
-        );
+        ]);
 
         done();
     });

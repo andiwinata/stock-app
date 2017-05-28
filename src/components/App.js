@@ -14,6 +14,7 @@ import styles from './App.css';
 
 export class App extends PureComponent {
     render() {
+        console.log('APP shown stock data', this.props.shownStockData);
         return (
             <main styleName="app-main">
                 <h1>Select Tickers:</h1>
@@ -34,6 +35,7 @@ export class App extends PureComponent {
                     shownDate={this.props.shownDate}
                     // doing deep copy to avoid mutation of stored stock data
                     storedStockData={Object.assign({}, this.props.storedStockData)}
+                    shownStockData={this.props.shownStockData}
                 />
             </main>
         );

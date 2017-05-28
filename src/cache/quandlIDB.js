@@ -133,6 +133,7 @@ export default function createQuandlIDB(overrider) {
         const getCachedTickerDataMiddleware = (next) => (tickerName, fromDate, toDate) => {
             return next(tickerName, fromDate, toDate)
                 .then(cachedTickerData => {
+                    console.log('getting ticker data promise', cachedTickerData);
                     // remove empty data inserted by putTickerDataMiddleware
                     cachedTickerData.cacheData = cachedTickerData.cacheData.filter(isNotEmptyTickerData);
                     return cachedTickerData;
