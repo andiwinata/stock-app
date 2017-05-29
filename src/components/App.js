@@ -14,7 +14,6 @@ import styles from './App.css';
 
 export class App extends PureComponent {
     render() {
-        console.log('APP shown stock data', this.props.shownStockData);
         return (
             <main styleName="app-main">
                 <h1>Select Tickers:</h1>

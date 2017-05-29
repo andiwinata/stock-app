@@ -74,13 +74,9 @@ export function* selectedDataChanged(action) {
     const fullyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.FULL);
     const partiallyCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.PARTIAL);
     const nonCachedStatuses = cachedStockStatuses.filter(status => status.cacheAvailability === CACHE_AVAILABILITY.NONE);
-    console.log('fullyCache', fullyCachedStatuses);
-    console.log('partCache', partiallyCachedStatuses);
-    console.log('nonCache', nonCachedStatuses);
 
     // meaning everything is cached
     if (partiallyCachedStatuses.length === 0 && nonCachedStatuses.length === 0) {
-        console.log('FULLY CACHED returned');
         yield put(actionCreators.tickerDataReceived(
             convertCacheStatusesToActionTickerData(fullyCachedStatuses),
             selectedTickersObj,
@@ -91,7 +87,6 @@ export function* selectedDataChanged(action) {
 
     // get urls to download missing data for partially/non-cached data
     const uris = generateUrisFromCacheStatuses([...partiallyCachedStatuses, ...nonCachedStatuses], serverHost, apiKey);
-    console.log('uris', uris);
 
     // get the json data from making request, then process the json
     const jsonResponses = yield uris.map(uri => call(fetchJson, uri));
@@ -101,15 +96,12 @@ export function* selectedDataChanged(action) {
     );
     // combine processedJson into 1 object
     const combinedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
-    console.log('jsonresp', jsonResponses, processedJsons, combinedProcessedJson);
 
     // concatenate the cached data into one
     const tickerData = convertCacheStatusesToActionTickerData(fullyCachedStatuses, partiallyCachedStatuses);
 
     // merge cached data with responses data
     mergeWith(tickerData, combinedProcessedJson, mergeWithArrayConcat);
-
-    console.log('ticker data', tickerData);
 
     // sort the merge of partially cached data
     const partiallyCachedTickerNames = partiallyCachedStatuses.forEach(status => {
@@ -118,10 +110,6 @@ export function* selectedDataChanged(action) {
 
     // get array of responses data to be passed in for IDB cache
     const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
-
-    console.log('combined processed json data', combinedProcessedJsonData); //, startDate, endDate);
-    // const addedKeys = yield call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate);
-    // console.log('addedKeys', addedKeys);
 
     yield [
         // send put request with new data
@@ -222,14 +210,4 @@ function* selectedInfoChanged(action) {
 export default function* stockAppSaga() {
     // yield takeEvery([actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED], selectedInfoChanged);
     yield takeEvery([actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED], selectedDataChanged);
-    // yield [
-    //     takeEvery(
-    //         [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
-    //         selectedInfoChanged
-    //     ),
-    //     // takeEvery(
-    //     //     [actionTypes.SELECTED_TICKER_CHANGED, actionTypes.SELECTED_DATE_CHANGED],
-    //     //     selectedDataChanged
-    //     // )
-    // ];
 }

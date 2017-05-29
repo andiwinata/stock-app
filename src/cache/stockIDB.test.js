@@ -5,6 +5,7 @@ import createStockIDB, {
 import { expect } from 'chai';
 import sinon from 'sinon';
 import moment from 'moment';
+import { adbeData } from '../../test/testData';
 
 describe('stockIDB test', () => {
     const stockIDB = createStockIDB();
@@ -52,7 +53,6 @@ describe('stockIDB test', () => {
                     done(`indexedDB error: ${error}`);
                 } else {
                     // database deleted successfully
-                    console.log('check result: stockIDB does not exist!');
                 }
             });
     }
@@ -109,7 +109,7 @@ describe('stockIDB test', () => {
     });
 
     it(`${stockIDB.putTickerData.name} puts data correctly and returning correct SORTED keys for the second time`, (done) => {
-        testPutTickerData(done, [...googData]);
+        testPutTickerData(done, [...googData, ...adbeData]);
     });
 
     it(`${stockIDB.getTickerData.name} returns data correctly and return SORTED data`, (done) => {
@@ -165,6 +165,25 @@ describe('stockIDB test', () => {
 
                 const expectedResult = cacheStatusFactory(
                     'MSFT',
+                    CACHE_AVAILABILITY.FULL,
+                    expectedTickerResult
+                );
+
+                expect(cachedTickerData).to.deep.equal(expectedResult);
+                done();
+            }).catch(catchErrorAsync(done, `Get cached error:`));
+    });
+
+     it(`${stockIDB.getCachedTickerData.name} returns fully cached data correctly for long duration data`, (done) => {
+        stockIDB.getCachedTickerData('ADBE', '20170228', '20170529')
+            .then(cachedTickerData => {
+
+                const expectedTickerResult = [...adbeData];
+                // sort again since indexedDB will sort it
+                expectedTickerResult.sort(stockDataComparerDate);
+
+                const expectedResult = cacheStatusFactory(
+                    'ADBE',
                     CACHE_AVAILABILITY.FULL,
                     expectedTickerResult
                 );

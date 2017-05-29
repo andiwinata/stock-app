@@ -80,7 +80,6 @@ describe('quandlIDB test', () => {
                     done(`indexedDB error: ${error}`);
                 } else {
                     // database deleted successfully
-                    console.log('check result: stockIDB does not exist!');
                 }
             });
     }

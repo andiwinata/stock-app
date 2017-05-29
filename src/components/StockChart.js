@@ -92,12 +92,16 @@ class StockChart extends PureComponent {
     }
 
     processTickerDataToChartData(tickerData) {
-        console.log('process ticker data', tickerData);
+        // can be null since the API might not have the data
+        if (!tickerData) {
+            return;
+        }
+
         const ohlc = [];
         const volume = [];
 
         tickerData.forEach(tickerDatum => {
-            const unixDate = moment(tickerDatum['date']).valueOf();
+            const unixDate = moment.utc(tickerDatum['date']).valueOf();
             
             ohlc.push([
                 unixDate,
@@ -117,7 +121,6 @@ class StockChart extends PureComponent {
     }
 
     componentWillReceiveProps(nextProps) {
-        console.log('STOCK CHART PROPS', this.props, nextProps, this.props.shownStockData === nextProps.shownStockData);
         // don't render new chart unless the data has been changed
         if (this.props.shownStockData === nextProps.shownStockData) {
             return;

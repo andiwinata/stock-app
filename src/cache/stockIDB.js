@@ -30,8 +30,6 @@ export function cacheStatusFactory(tickerName, cacheAvailability = CACHE_AVAILAB
         throw new TypeError(`dateGaps must contain only dateGap object`);
     }
 
-    console.log('FACTORY', cacheData);
-
     return {
         tickerName,
         cacheAvailability,
@@ -268,8 +266,8 @@ export default function createStockIDB(overrider, configOverride) {
     function getCachedTickerData(tickerName, fromDate, toDate) {
         return new Promise((resolve, reject) => {
 
-            fromDate = moment(fromDate);
-            toDate = moment(toDate);
+            fromDate = moment(fromDate).startOf('day');
+            toDate = moment(toDate).startOf('day');
 
             // if fromDate and toDate are not valid
             if (fromDate.isAfter(toDate, 'days')) {
