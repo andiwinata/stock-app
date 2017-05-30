@@ -95,6 +95,14 @@ export default function createStockIDB(overrider, configOverride) {
         return config[key];
     }
 
+    /**
+     * Will check last time IDB created from localStorage
+     * will wipe the IDB after x amount of time since IDB re-creation/refresh
+     */
+    function checkCacheExpired() {
+        
+    }
+
     function getOrCreateStockIDB() {
         return new Promise((resolve, reject) => {
             if (!isIndexedDBExist) {

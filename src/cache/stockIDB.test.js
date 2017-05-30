@@ -174,8 +174,8 @@ describe('stockIDB test', () => {
             }).catch(catchErrorAsync(done, `Get cached error:`));
     });
 
-     it(`${stockIDB.getCachedTickerData.name} returns fully cached data correctly for long duration data`, (done) => {
-        stockIDB.getCachedTickerData('ADBE', '20170228', '20170529')
+     it(`${stockIDB.getCachedTickerData.name} returns fully cached data correctly for long duration data and with timestamp`, (done) => {
+        stockIDB.getCachedTickerData('ADBE', '2017-02-28T23:58:10.102', '2017-05-29T03:12:15.106')
             .then(cachedTickerData => {
 
                 const expectedTickerResult = [...adbeData];
