@@ -13,7 +13,9 @@ export const dateGapComparer = (gap1, gap2, dateFormat) => moment(gap1.startDate
 export const defaultConfig = {
     dbName: 'quandlStockCache',
     objectStoreName: 'tickerObjectStore',
-    tickerDateIndexName: 'tickerDate'
+    tickerDateIndexName: 'tickerDate',
+    cacheRefreshTimeKeyName: 'cacheRefreshTime',
+    cacheLifetimeDays: 1,
 };
 
 export const stockIDBDateFormat = 'YYYYMMDD'; // using iso
@@ -77,6 +79,13 @@ export default function createStockIDB(overrider, configOverride) {
 
     function _init() {
         _assignLegacyIndexedDB();
+
+        if (checkCacheExpired()) {
+            console.log('cache expired, deleting IDB');
+            // be careful with this since this is async operation
+            deleteStockIDB();
+            _setCacheRefreshTime();
+        }
     };
 
     /**
@@ -100,7 +109,23 @@ export default function createStockIDB(overrider, configOverride) {
      * will wipe the IDB after x amount of time since IDB re-creation/refresh
      */
     function checkCacheExpired() {
-        
+        const lastCacheRefreshTime = localStorage[config.cacheRefreshTimeKeyName];
+        if (!lastCacheRefreshTime) {
+            return true;
+        }
+
+        const refreshTime = moment(lastCacheRefreshTime);
+        // if the last refresh time is more than cacheLifetimeDays
+        if (moment().diff(refreshTime, 'day', true) > config.cacheLifetimeDays) {
+            // means the cache has expired
+            return true;
+        }
+
+        return false;
+    }
+
+    function _setCacheRefreshTime() {
+        localStorage[config.cacheRefreshTimeKeyName] = moment().format();
     }
 
     function getOrCreateStockIDB() {
@@ -453,6 +478,7 @@ export default function createStockIDB(overrider, configOverride) {
 
     const stockIDBInstance = {
         isIndexedDBExist,
+        checkCacheExpired,
         getConfig,
         getOrCreateStockIDB,
         getStockIDB,
