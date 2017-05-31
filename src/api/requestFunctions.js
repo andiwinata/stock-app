@@ -36,68 +36,6 @@ export function constructRetrieveTickerDataUri(serverHost, tickers, startDate, e
     return uri;
 }
 
-/**
- * @typedef RequestListObj
- * @property {String[]} dateRange in string format: `${startDate}-${endDate}`
- */
-
-/**
- * Generate RequestListObj from StockDataCacheStatus
- * 
- * @export
- * @param {StockDataCacheStatus} cacheStatuses
- * @returns {RequestListObj} Object containing request list mapped by daterange as key
- */
-export function getRequestListObjForCacheStatuses(cacheStatuses) {
-    const requestsList = {};
-
-    // construct requestsList
-    // grouped by matching start and end date, containing array of tickers
-    cacheStatuses.forEach(cacheStatus => {
-        cacheStatus.dateGaps.forEach(dateGap => {
-            const combinedStartEndDate = `${dateGap.startDate}-${dateGap.endDate}`;
-
-            if (!(combinedStartEndDate in requestsList)) {
-                requestsList[combinedStartEndDate] = [];
-            }
-            requestsList[combinedStartEndDate].push(cacheStatus.ticker);
-        });
-    });
-
-    return requestsList;
-}
-
-/**
- * 
- * 
- * @export
- * @param {String} serverHost
- * @param {StockDataCacheStatus} cacheStatuses
- * @param {String} apiKey
- * @param {Object} extraParams
- * @param {Object} functionDependencies
- * @returns {String[]} Array of URI/URLs
- */
-export function getRequestUrisForCacheStatuses(serverHost, cacheStatuses, apiKey = null, extraParams = null, dependenciesInjector = null) {
-    // this is not ideal... 
-    // this is used for testing purposes
-    if (!dependenciesInjector) {
-        console.log('NO dependenciesInjector');
-        dependenciesInjector = {
-            getRequestListObjForCacheStatuses,
-            constructRetrieveTickerDataUri
-        };
-    }
-
-    const requestsList = dependenciesInjector.getRequestListObjForCacheStatuses(cacheStatuses);
-
-    // return constructed request url for every requestLists entry
-    return Object.keys(requestsList).map(startEndDate => {
-        const [startDate, endDate] = startEndDate.split('-');
-        return dependenciesInjector.constructRetrieveTickerDataUri(serverHost, requestsList[startEndDate], startDate, endDate, apiKey, extraParams);
-    });
-}
-
 export function generateUrisFromCacheStatuses(cacheStatuses, serverHost, apiKey) {
     // group tickerName based on dateGap first
     // e.g. if there are 2 cacheStatuses
