@@ -42,32 +42,12 @@ export function shownDate(state = {}, action) {
     }
 }
 
-export function storedStockMergeCustomizer(objValue, srcValue) {
-    if (!objValue || !srcValue) {
-        return merge(objValue, srcValue);
-    }
-
-    if ("startDate" in objValue && "endDate" in objValue) {
-        // if store startDate is earlier than received one
-        if (moment(objValue.startDate).isBefore(srcValue.startDate)) {
-            // replace the srcValue with objValue to retain the earliest date
-            srcValue.startDate = objValue.startDate;
-        }
-        // if source endDate is later than received one
-        if (moment(objValue.endDate).isAfter(srcValue.endDate)) {
-            // replace the srcValue with objValue to retain the latest date
-            srcValue.endDate = objValue.endDate;
-        }
-    }
-    return merge(objValue, srcValue);
-}
-
-export function storedStockData(state = {}, action) {
+export function shownStockData(state = {}, action) {
     switch (action.type) {
         case actionTypes.TICKER_DATA_RECEIVED:
-            return mergeWith({}, state, action.receivedTickerData, storedStockMergeCustomizer);
+            return action.receivedTickerData;
         default:
-            return state;
+            return state;        
     }
 }
 
@@ -89,7 +69,7 @@ export default combineReducers({
     selectedDate,
     shownTickers,
     shownDate,
-    storedStockData,
+    shownStockData,
     apiKey,
     serverHost
 });

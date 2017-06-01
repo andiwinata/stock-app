@@ -6,7 +6,9 @@
   "scripts": {
     "test": "node ./node_modules/karma/bin/karma start --single-run",
     "test-jsdom": "mocha --require babel-core/register --require ./test/testHelper.js \"./src/**/*@(.test.js|.test.jsx)\" \"./test/**/*@(.test.js|.test.jsx)\"",
-    "test-jsdom:watch": "npm run test -- --watch",
+    "test-jsdom:watch": "npm run test-jsdom -- --watch",
+    "test-jsdom-no-idb": "mocha --require babel-core/register --require babel-polyfill --require ignore-styles --require ./test/testHelper.js \"./src/!(cache)/**/*@(.test.js|.test.jsx)\" \"./src/*@(.test.js|.test.jsx)\" \"./test/**/*@(.test.js|.test.jsx)\"",
+    "test-jsdom-no-idb:watch": "npm run test-jsdom-no-idb -- --watch",
     "test-karma": "node ./node_modules/karma/bin/karma start",
     "start-local-server": "cd ../stock-app-server && heroku local",
     "start-local": "cd ../stock-app-server && start heroku local && cd ../stock-app && webpack-dev-server"
@@ -21,8 +23,10 @@
     "babel-preset-react": "^6.23.0",
     "chai": "^3.5.0",
     "css-loader": "^0.26.1",
+    "ignore-styles": "^5.0.1",
     "jsdom": "^9.11.0",
     "karma": "^1.6.0",
+    "karma-babel-preprocessor": "^6.0.1",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^2.0.0",
     "karma-mocha": "^1.3.0",

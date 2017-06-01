@@ -36,64 +36,32 @@ export function constructRetrieveTickerDataUri(serverHost, tickers, startDate, e
     return uri;
 }
 
-/**
- * @typedef RequestListObj
- * @property {String[]} dateRange in string format: `${startDate}-${endDate}`
- */
-
-/**
- * Generate RequestListObj from StockDataCacheStatus
- * 
- * @export
- * @param {StockDataCacheStatus} cacheStatuses
- * @returns {RequestListObj} Object containing request list mapped by daterange as key
- */
-export function getRequestListObjForCacheStatuses(cacheStatuses) {
-    const requestsList = {};
-
-    // construct requestsList
-    // grouped by matching start and end date, containing array of tickers
+export function generateUrisFromCacheStatuses(cacheStatuses, serverHost, apiKey) {
+    // group tickerName based on dateGap first
+    // e.g. if there are 2 cacheStatuses
+    // { tickerName: MSFT, dateGaps: [{startDate: 20170101, endDate: 20170103}, {startDate: 20170107, endDate: 20170110}] }
+    // { tickerName: AMZN, dateGaps: [{startDate: 20170101, endDate: 20170103}, {startDate: 20170110, endDate: 20170115}] }
+    // it will become
+    // { 20170101_20170103: [MSFT, AMZN], 20170107_20170110: [MSFT], 20170110_20170115: [AMZN] }
+    // so from that object we can construct the minimum requests needed to get all data
+    const tickerNamesGroupedByDateGap = {};
     cacheStatuses.forEach(cacheStatus => {
         cacheStatus.dateGaps.forEach(dateGap => {
-            const combinedStartEndDate = `${dateGap.startDate}-${dateGap.endDate}`;
-
-            if (!(combinedStartEndDate in requestsList)) {
-                requestsList[combinedStartEndDate] = [];
+            const dateGapKey = `${dateGap.startDate}_${dateGap.endDate}`;
+            if (!(dateGapKey in tickerNamesGroupedByDateGap)) {
+                tickerNamesGroupedByDateGap[dateGapKey] = [];
             }
-            requestsList[combinedStartEndDate].push(cacheStatus.ticker);
+
+            tickerNamesGroupedByDateGap[dateGapKey].push(cacheStatus.tickerName);
         });
     });
 
-    return requestsList;
-}
-
-/**
- * 
- * 
- * @export
- * @param {String} serverHost
- * @param {StockDataCacheStatus} cacheStatuses
- * @param {String} apiKey
- * @param {Object} extraParams
- * @param {Object} functionDependencies
- * @returns {String[]} Array of URI/URLs
- */
-export function getRequestUrisForCacheStatuses(serverHost, cacheStatuses, apiKey = null, extraParams = null, dependenciesInjector = null) {
-    // this is not ideal... 
-    // this is used for testing purposes
-    if (!dependenciesInjector) {
-        console.log('NO dependenciesInjector');
-        dependenciesInjector = {
-            getRequestListObjForCacheStatuses,
-            constructRetrieveTickerDataUri
-        };
-    }
-
-    const requestsList = dependenciesInjector.getRequestListObjForCacheStatuses(cacheStatuses);
-
-    // return constructed request url for every requestLists entry
-    return Object.keys(requestsList).map(startEndDate => {
-        const [startDate, endDate] = startEndDate.split('-');
-        return dependenciesInjector.constructRetrieveTickerDataUri(serverHost, requestsList[startEndDate], startDate, endDate, apiKey, extraParams);
+    // generate the uris
+    const uris = Object.keys(tickerNamesGroupedByDateGap).map(dateGapString => {
+        const [startDate, endDate] = dateGapString.split('_');
+        const tickers = tickerNamesGroupedByDateGap[dateGapString];
+        return constructRetrieveTickerDataUri(serverHost, tickers, startDate, endDate, apiKey);
     });
+
+    return uris;
 }
