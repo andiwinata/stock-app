@@ -205,6 +205,10 @@ export default function createStockIDB(overrider, configOverride) {
     };
 
     function putTickerData(tickerData) {
+        if (!tickerData || tickerData.length === 0) {
+            return Promise.resolve(null);
+        }
+
         if (!Array.isArray(tickerData)) {
             tickerData = [tickerData];
         }

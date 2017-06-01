@@ -45,13 +45,16 @@ export default function createQuandlIDB(overrider) {
          * Trying to fill in dateGaps from tickerData, based on startDate and endDate
          * fill empty tickerData on corresponding date with -1 value
          * 
-         * 
          * @param {*} next 
          */
-        const putTickerDataMiddleware = (next) => (tickerData, startDate, endDate) => { // DATE FORMAT TO REFACTOR USING CONFIG OBJECT!
-            if (!Array.isArray(tickerData)) {
+        const putTickerDataMiddleware = (next) => (tickerData, startDate, endDate) => {
+            // only go ahead with valid tickerData
+            if (!tickerData || tickerData.length === 0) {
                 return next(tickerData);
-            } else if (tickerData.length === 1) {
+            }
+
+            // if ticker data is just one singular data, skip doing this middleware
+            if (!Array.isArray(tickerData) || tickerData.length === 1) {
                 return next(tickerData);
             }
 

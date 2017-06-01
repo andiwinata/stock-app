@@ -189,6 +189,20 @@ describe('quandlIDB test', () => {
             .catch(catchErrorAsync(done, `Fail in quandlIDB.putTickerData`));
     });
 
+    it(`quandlIDB.putTickerData return null when adding invalid data 1`, () => {
+        return quandlIDB.putTickerData(undefined)
+            .then(results => {
+                expect(results).to.be.null;
+            })
+    });
+
+    it(`quandlIDB.putTickerData return null when adding invalid data 2`, () => {
+        return quandlIDB.putTickerData([])
+            .then(results => {
+                expect(results).to.be.null;
+            })
+    });
+
     it(`quandlIDB.getCachedTickerData return all NOT-empty ticker data`, done => {
         quandlIDB.getCachedTickerData('GOOG', '20170101', '20170131')
             .then(cachedTickerData => {

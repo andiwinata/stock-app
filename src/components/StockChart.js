@@ -92,17 +92,12 @@ class StockChart extends PureComponent {
     }
 
     processTickerDataToChartData(tickerData) {
-        // can be null since the API might not have the data
-        if (!tickerData) {
-            return;
-        }
-
         const ohlc = [];
         const volume = [];
 
         tickerData.forEach(tickerDatum => {
             const unixDate = moment.utc(tickerDatum['date']).valueOf();
-            
+
             ohlc.push([
                 unixDate,
                 tickerDatum['adj_open'],
@@ -127,22 +122,26 @@ class StockChart extends PureComponent {
         }
 
         console.log('DRAWING STOCK CHART!');
-
         const { startDate, endDate } = nextProps.shownDate;
-        // console.log(nextProps.storedStockData, startDate, endDate, nextProps.shownTickers, "!!!!!!!!!!!!!!!!!!!!!!!!!!!xxxxxxxxxxx");
-
         if (!startDate || !endDate || !nextProps.shownTickers || nextProps.shownTickers.length === 0) {
             return;
         }
-        
+
         const tickerData = nextProps.shownStockData[nextProps.shownTickers[0].value];
+        let ohlc, volume;
         // ticker data can be empty from API
         if (!tickerData) {
-            return;
+            // if the chart data is already empty, then dont redraw empty chart
+            if (this.chart.series[0].data.length === 0) {
+                return;
+            } else {
+                // else draw empty chart
+                ohlc = volume = [];
+            }
+        } else {
+            // get ticker data for ticker name (right now only do the first one)
+            ({ ohlc, volume } = this.processTickerDataToChartData(tickerData));
         }
-
-        // get ticker data for ticker name (right now only do the first one)
-        const { ohlc, volume } = this.processTickerDataToChartData(tickerData);
 
         this.chart.series[0].update({
             data: ohlc,
@@ -153,7 +152,6 @@ class StockChart extends PureComponent {
             data: volume,
             name: nextProps.shownTickers[0].value
         });
-
     }
 
     render() {

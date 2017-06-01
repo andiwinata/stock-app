@@ -112,6 +112,20 @@ describe('stockIDB test', () => {
         testPutTickerData(done, [...googData, ...adbeData]);
     });
 
+    it(`${stockIDB.putTickerData.name} return null when adding invalid data 1`, () => {
+        return stockIDB.putTickerData(undefined)
+            .then(results => {
+                expect(results).to.be.null;
+            })
+    });
+
+    it(`${stockIDB.putTickerData.name} return null when adding invalid data 2`, () => {
+        return stockIDB.putTickerData([])
+            .then(results => {
+                expect(results).to.be.null;
+            })
+    });
+
     it(`${stockIDB.getTickerData.name} returns data correctly and return SORTED data`, (done) => {
         stockIDB.getTickerData('AMZN', '20170109', '20170113')
             .then(tickerData => {
@@ -174,7 +188,7 @@ describe('stockIDB test', () => {
             }).catch(catchErrorAsync(done, `Get cached error:`));
     });
 
-     it(`${stockIDB.getCachedTickerData.name} returns fully cached data correctly for long duration data and with timestamp`, (done) => {
+    it(`${stockIDB.getCachedTickerData.name} returns fully cached data correctly for long duration data and with timestamp`, (done) => {
         stockIDB.getCachedTickerData('ADBE', '2017-02-28T23:58:10.102', '2017-05-29T03:12:15.106')
             .then(cachedTickerData => {
 
