@@ -80,6 +80,7 @@ git commit -m "[Travis CI] Deploy GitHubPage from: ${SHA}"
 # https://stackoverflow.com/questions/10697463/resolve-git-merge-conflicts-in-favor-of-their-changes-during-a-pull
 echo
 echo "Pulling $TARGET_BRANCH....."
+git branch --set-upstream-to="origin/$TARGET_BRANCH" "$TARGET_BRANCH"
 git pull -s recursive -X ours
 
 # Get the deploy key by using Travis's stored variables to decrypt deploy_key.enc
