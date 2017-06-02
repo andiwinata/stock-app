@@ -4,34 +4,73 @@ const isString = (str) => {
     return (typeof str === 'string' || str instanceof String);
 };
 
-export const stockDataComparer = (a, b) => {
-    return a.date < b.date ?
-        -1 : (a.date > b.date ? 1 : 0);
+export const stockDataComparerDate = (a, b) => {
+    return moment(a.date).diff(b.date, 'days');
 };
 
-export const dateGapComparer = (gap1, gap2) => moment(gap1.startDate).diff(gap2.startDate, 'days');
+export const dateGapComparer = (gap1, gap2, dateFormat) => moment(gap1.startDate, dateFormat).diff(gap2.startDate, 'days');
 
 export const defaultConfig = {
     dbName: 'quandlStockCache',
     objectStoreName: 'tickerObjectStore',
     tickerDateIndexName: 'tickerDate',
-    dateFormat: 'YYYYMMDD'
+    cacheRefreshTimeKeyName: 'cacheRefreshTime',
+    cacheLifetimeDays: 1,
 };
 
-export default function createStockIDB(overrider, config = defaultConfig) {
+export const stockIDBDateFormat = 'YYYYMMDD'; // using iso
+
+export const CACHE_AVAILABILITY = {
+    FULL: 'FULL',
+    PARTIAL: 'PARTIAL',
+    NONE: 'NONE'
+};
+
+export function cacheStatusFactory(tickerName, cacheAvailability = CACHE_AVAILABILITY.NONE, cacheData = [], dateGaps = []) {
+    const validDateGaps = dateGaps.every(gap => 'startDate' in gap && 'endDate' in gap);
+    if (!validDateGaps) {
+        throw new TypeError(`dateGaps must contain only dateGap object`);
+    }
+
+    return {
+        tickerName,
+        cacheAvailability,
+        cacheData,
+        dateGaps,
+    };
+};
+
+export function dateGapFactory(startDate, endDate) {
+    if (!isString(startDate) || !isString(endDate)) {
+        throw TypeError(`startDate and endDate must be string`);
+    }
+
+    return {
+        startDate,
+        endDate
+    };
+};
+
+/**
+ * Creating a stockIDB
+ * all datetime will be passed in iso format 
+ * (YYYYMMDD/YYYY-MM-DD/whatever format as long there is YYYY MM DD in correct order)
+ * 
+ * @export
+ * @param {any} overrider           for applying middleware to any functions of stockIDB
+ * @param {any} configOverride      to replace any option from defaultConfig
+ * @returns 
+ */
+export default function createStockIDB(overrider, configOverride) {
     function isIndexedDBExist() {
         const indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
 
         return !!indexedDB;
     };
 
-    const CACHE_AVAILABILITY = {
-        FULL: 'FULL',
-        PARTIAL: 'PARTIAL',
-        NONE: 'NONE'
-    };
-
     let _db = null;
+    const isoDateFormat = stockIDBDateFormat;
+    const config = Object.assign({}, defaultConfig, configOverride);
 
     function _assignLegacyIndexedDB() {
         window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || { READ_WRITE: "readwrite" }; // This line should only be needed if it is needed to support the object's constants for older browsers
@@ -40,6 +79,13 @@ export default function createStockIDB(overrider, config = defaultConfig) {
 
     function _init() {
         _assignLegacyIndexedDB();
+
+        if (checkCacheExpired()) {
+            console.log('cache expired, deleting IDB');
+            // be careful with this since this is async operation
+            deleteStockIDB();
+            _setCacheRefreshTime();
+        }
     };
 
     /**
@@ -52,6 +98,34 @@ export default function createStockIDB(overrider, config = defaultConfig) {
         db.onversionchange = (event) => {
             event.target.close();
         };
+    }
+
+    function getConfig(key) {
+        return config[key];
+    }
+
+    /**
+     * Will check last time IDB created from localStorage
+     * will wipe the IDB after x amount of time since IDB re-creation/refresh
+     */
+    function checkCacheExpired() {
+        const lastCacheRefreshTime = localStorage[config.cacheRefreshTimeKeyName];
+        if (!lastCacheRefreshTime) {
+            return true;
+        }
+
+        const refreshTime = moment(lastCacheRefreshTime);
+        // if the last refresh time is more than cacheLifetimeDays
+        if (moment().diff(refreshTime, 'day', true) > config.cacheLifetimeDays) {
+            // means the cache has expired
+            return true;
+        }
+
+        return false;
+    }
+
+    function _setCacheRefreshTime() {
+        localStorage[config.cacheRefreshTimeKeyName] = moment().format();
     }
 
     function getOrCreateStockIDB() {
@@ -131,12 +205,15 @@ export default function createStockIDB(overrider, config = defaultConfig) {
     };
 
     function putTickerData(tickerData) {
+        if (!tickerData || tickerData.length === 0) {
+            return Promise.resolve(null);
+        }
+
         if (!Array.isArray(tickerData)) {
             tickerData = [tickerData];
         }
 
         return new Promise((resolve, reject) => {
-
             getOrCreateStockIDB().then((db) => {
                 const tickerObjectStore = db.transaction([config.objectStoreName], 'readwrite')
                     .objectStore(config.objectStoreName);
@@ -145,6 +222,11 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 const putPromises = [];
 
                 tickerData.forEach((tickerValue) => {
+                    // convert date to the indexedDB format
+                    // this is because ideally it should always be in iso format
+                    // since for querying later it is using string value
+                    tickerValue.date = moment(tickerValue.date).format(isoDateFormat);
+
                     putPromises.push(new Promise((resolve, reject) => {
                         // create ticker key so later on the old cache can be replaced by using same key
                         const putRequest = tickerObjectStore.put(
@@ -155,7 +237,7 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                             resolve(putRequest.result);
                         };
                         putRequest.onerror = (event) => {
-                            reject(`Fail to put ${tickerValue} to objectStore. ${putRequest.error}`);
+                            reject(`Fail to put ${JSON.stringify(tickerValue)} to objectStore. ${putRequest.error}`);
                         };
                     }));
                 });
@@ -174,6 +256,10 @@ export default function createStockIDB(overrider, config = defaultConfig) {
     };
 
     function getTickerData(tickerName, fromDate, toDate) {
+        // format the date for querying
+        fromDate = moment(fromDate).format(isoDateFormat);
+        toDate = moment(toDate).format(isoDateFormat);
+
         return new Promise((resolve, reject) => {
             getOrCreateStockIDB().then((db) => {
                 const tickerObjectStore = db.transaction([config.objectStoreName], 'readonly')
@@ -204,30 +290,6 @@ export default function createStockIDB(overrider, config = defaultConfig) {
         });
     };
 
-    function cacheStatusFactory(cacheAvailability = CACHE_AVAILABILITY.NONE, cacheData = [], dateGaps = []) {
-        const validDateGaps = dateGaps.every(gap => 'startDate' in gap && 'endDate' in gap);
-        if (!validDateGaps) {
-            throw new TypeError(`dateGaps must contain only dateGap object`);
-        }
-
-        return {
-            cacheAvailability,
-            cacheData,
-            dateGaps
-        };
-    };
-
-    function dateGapFactory(startDate, endDate) {
-        if (!isString(startDate) || !isString(endDate)) {
-            throw TypeError(`startDate and endDate must be string`);
-        }
-
-        return {
-            startDate,
-            endDate
-        };
-    };
-
     /**
      * Return Promise containing CacheStatus of selectedTickerData
      * It basically returns array of tickerData wrapped in CacheStatus object
@@ -241,9 +303,8 @@ export default function createStockIDB(overrider, config = defaultConfig) {
     function getCachedTickerData(tickerName, fromDate, toDate) {
         return new Promise((resolve, reject) => {
 
-            fromDate = moment(fromDate);
-            toDate = moment(toDate);
-            const dateFormat = config.dateFormat;
+            fromDate = moment(fromDate).startOf('day');
+            toDate = moment(toDate).startOf('day');
 
             // if fromDate and toDate are not valid
             if (fromDate.isAfter(toDate, 'days')) {
@@ -266,8 +327,7 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 let startDateGap;
 
                 for (let tickerData of tickerDataArray) {
-
-                    if (currDate.diff(tickerData.date) !== 0) {
+                    if (currDate.diff(tickerData.date, 'days') !== 0) {
                         // current item date is not equal to currDate
                         // meaning the current tickerData.date has jumped more than 1 days
                         // so we are entering 'gap range' thus we need to set the currStartDateGap variable
@@ -281,8 +341,8 @@ export default function createStockIDB(overrider, config = defaultConfig) {
 
                         // after catching up, add the 'gap' to dateGaps from startDateGap until currentDate - 1
                         dateGaps.push(dateGapFactory(
-                            startDateGap.format(dateFormat),
-                            moment(currDate).subtract(1, 'days').format(dateFormat)
+                            startDateGap.format(isoDateFormat),
+                            moment(currDate).subtract(1, 'days').format(isoDateFormat)
                         ));
 
                         // resetting the startDateGap variable
@@ -308,7 +368,10 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 // if there is no stored data
                 if (storedTickerDataArr.length === 0) {
                     return cacheStatusFactory(
-                        CACHE_AVAILABILITY.NONE
+                        tickerName,
+                        CACHE_AVAILABILITY.NONE,
+                        [],
+                        [dateGapFactory(fromDate.format(isoDateFormat), toDate.format(isoDateFormat))]
                     );
                 }
 
@@ -326,6 +389,7 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 // it means the all the requested data actually fully cached
                 if (startDateDiff === 0 && endDateDiff === 0 && storedTickerDataArr.length === totalDaysInRequest) {
                     return cacheStatusFactory(
+                        tickerName,
                         CACHE_AVAILABILITY.FULL,
                         storedTickerDataArr
                     );
@@ -339,8 +403,8 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 // add gap from 'fromDate' to 'firstStoredDate - 1'
                 if (startDateDiff !== 0) {
                     dateGaps.push(dateGapFactory(
-                        fromDate.format(dateFormat),
-                        moment(firstStoredDate).subtract(1, 'days').format(dateFormat)
+                        fromDate.format(isoDateFormat),
+                        moment(firstStoredDate).subtract(1, 'days').format(isoDateFormat)
                     ));
                 }
 
@@ -348,8 +412,8 @@ export default function createStockIDB(overrider, config = defaultConfig) {
                 // add gap from 'lastStoredDate + 1' to 'toDate'
                 if (endDateDiff !== 0) {
                     dateGaps.push(dateGapFactory(
-                        moment(lastStoredDate).add(1, 'days').format(dateFormat),
-                        toDate.format(dateFormat)
+                        moment(lastStoredDate).add(1, 'days').format(isoDateFormat),
+                        toDate.format(isoDateFormat)
                     ));
                 }
 
@@ -368,6 +432,7 @@ export default function createStockIDB(overrider, config = defaultConfig) {
 
                 // return partial cache status
                 return cacheStatusFactory(
+                    tickerName,
                     CACHE_AVAILABILITY.PARTIAL,
                     storedTickerDataArr,
                     dateGaps
@@ -375,7 +440,7 @@ export default function createStockIDB(overrider, config = defaultConfig) {
             };
 
             // make getTickerData request
-            getTickerData(tickerName, fromDate.format(dateFormat), toDate.format(dateFormat))
+            getTickerData(tickerName, fromDate.format(isoDateFormat), toDate.format(isoDateFormat))
                 .then(storedTickerDataArr => {
                     // wrap the ticker data
                     const cacheStatusOfStoredTickerData = wrapTickerDataInsideCacheStatus(storedTickerDataArr);
@@ -417,15 +482,13 @@ export default function createStockIDB(overrider, config = defaultConfig) {
 
     const stockIDBInstance = {
         isIndexedDBExist,
-        CACHE_AVAILABILITY,
-        config,
+        checkCacheExpired,
+        getConfig,
         getOrCreateStockIDB,
         getStockIDB,
         getTickerObjectStoreKey,
         putTickerData,
         getTickerData,
-        cacheStatusFactory,
-        dateGapFactory,
         getCachedTickerData,
         deleteStockIDB
     };

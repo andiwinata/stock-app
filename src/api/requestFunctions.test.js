@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as requestFunctions from './requestFunctions';
-import * as storeFunctions from '../storeFunctions';
+import { CACHE_AVAILABILITY, cacheStatusFactory, dateGapFactory } from '../cache/quandlIDB';
 import URI from 'urijs';
 import sinon from 'sinon';
 
@@ -112,147 +112,58 @@ describe(`requestFunctions test`, () => {
 
     });
 
-    describe(`${requestFunctions.getRequestListObjForCacheStatuses.name}`, () => {
+    const hostUrl = 'http://host/com';
 
-        it('returns correct requestListObj for multiple tickers (some with same daterange)', () => {
+    describe(`${requestFunctions.generateUrisFromCacheStatuses.name}`, () => {
+
+        it('returns correct uris for multiple tickers (some with same daterange)', () => {
             const cacheStatuses = [
-                {
-                    ticker: 'MSFT',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-                    dateGaps: [
-                        { startDate: '20140909', endDate: '20150101' },
-                        { startDate: '20150108', endDate: '20160102' }
-                    ]
-                },
-                {
-                    ticker: 'MS',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-                    dateGaps: [
-                        { startDate: '20140909', endDate: '20150101' },
-                        { startDate: '20150108', endDate: '20160102' }
-                    ]
-                },
-                {
-                    ticker: 'FB',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.NONE,
-                    dateGaps: [
-                        { startDate: '20140909', endDate: '20160102' }
-                    ]
-                }
+                cacheStatusFactory('MSFT', CACHE_AVAILABILITY.PARTIAL, [], [dateGapFactory('20140909', '20150101'), dateGapFactory('20150108', '20160102')]),
+                cacheStatusFactory('MS', CACHE_AVAILABILITY.PARTIAL, [], [dateGapFactory('20140909', '20150101'), dateGapFactory('20150108', '20160102')]),
+                cacheStatusFactory('FB', CACHE_AVAILABILITY.NONE, [], [dateGapFactory('20140909', '20160102')])
             ];
 
-            const reqListObj = requestFunctions.getRequestListObjForCacheStatuses(cacheStatuses);
+            const generatedUrl = requestFunctions.generateUrisFromCacheStatuses(cacheStatuses, hostUrl);
+            const expected = [
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['MSFT', 'MS'], '20140909', '20150101'),
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['MSFT', 'MS'], '20150108', '20160102'),
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['FB'], '20140909', '20160102'),
+            ];
 
-            expect(reqListObj).to.deep.equal({
-                '20140909-20150101': ['MSFT', 'MS'],
-                '20150108-20160102': ['MSFT', 'MS'],
-                '20140909-20160102': ['FB']
-            });
+            expect(generatedUrl.sort()).to.deep.equal(expected.sort());
         });
 
-        it('returns correct requestListObj for multiple tickers (with all different daterange)', () => {
+        it('returns correct uris for multiple tickers (with all different daterange)', () => {
             const cacheStatuses = [
-                {
-                    ticker: 'MSFT',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-                    dateGaps: [
-                        { startDate: '20140909', endDate: '20150101' },
-                        { startDate: '20150108', endDate: '20160102' }
-                    ]
-                },
-                {
-                    ticker: 'AMZN',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-                    dateGaps: [
-                        { startDate: '20120905', endDate: '20130502' },
-                        { startDate: '20130705', endDate: '20130805' }
-                    ]
-                },
-                {
-                    ticker: 'FB',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.NONE,
-                    dateGaps: [
-                        { startDate: '20140909', endDate: '20160102' }
-                    ]
-                }
+                cacheStatusFactory('MSFT', CACHE_AVAILABILITY.PARTIAL, [], [dateGapFactory('20140909', '20150101'), dateGapFactory('20150108', '20160102')]),
+                cacheStatusFactory('AMZN', CACHE_AVAILABILITY.PARTIAL, [], [dateGapFactory('20120905', '20130502'), dateGapFactory('20130705', '20130805')]),
+                cacheStatusFactory('FB', CACHE_AVAILABILITY.NONE, [], [dateGapFactory('20140909', '20160102')])
             ];
 
-            const reqListObj = requestFunctions.getRequestListObjForCacheStatuses(cacheStatuses);
+            const generatedUrl = requestFunctions.generateUrisFromCacheStatuses(cacheStatuses, hostUrl);
+            const expected = [
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['AMZN'], '20120905', '20130502'),
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['AMZN'], '20130705', '20130805'),
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['MSFT'], '20140909', '20150101'),
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['MSFT'], '20150108', '20160102'),
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['FB'], '20140909', '20160102'),
+            ];
 
-            expect(reqListObj).to.deep.equal({
-                '20120905-20130502': ['AMZN'],
-                '20130705-20130805': ['AMZN'],
-                '20140909-20150101': ['MSFT'],
-                '20150108-20160102': ['MSFT'],
-                '20140909-20160102': ['FB']
-            });
+            expect(generatedUrl.sort()).to.deep.equal(expected.sort());
         });
 
         it('returns correct requestListObj for single ticker', () => {
             const cacheStatuses = [
-                {
-                    ticker: 'MSFT',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-                    dateGaps: [
-                        { startDate: '2014/9/9', endDate: '2015/1/1' },
-                        { startDate: '2015/1/8', endDate: '2016/1/2' }
-                    ]
-                }
+                cacheStatusFactory('MSFT', CACHE_AVAILABILITY.PARTIAL, [], [dateGapFactory('20140909', '20150101'), dateGapFactory('20150108', '20160102')]),
             ];
 
-            const reqListObj = requestFunctions.getRequestListObjForCacheStatuses(cacheStatuses);
-
-            expect(reqListObj).to.deep.equal({
-                '2014/9/9-2015/1/1': ['MSFT'],
-                '2015/1/8-2016/1/2': ['MSFT']
-            });
-        });
-
-    });
-
-    describe(`${requestFunctions.getRequestUrisForCacheStatuses.name}`, () => {
-
-        it('runs collect logic to produce uris for cache statuses', () => {
-            // mocking data
-            const cacheStatuses = [
-                {
-                    ticker: 'MSFT',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-                    dateGaps: [
-                        { startDate: '20140909', endDate: '20150101' },
-                        { startDate: '20150108', endDate: '20160102' }
-                    ]
-                },
-                {
-                    ticker: 'MS',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.PARTIAL,
-                    dateGaps: [
-                        { startDate: '20140909', endDate: '20150101' },
-                        { startDate: '20150108', endDate: '20160102' }
-                    ]
-                },
-                {
-                    ticker: 'FB',
-                    cacheAvailability: storeFunctions.CACHE_AVAILABILITY.NONE,
-                    dateGaps: [
-                        { startDate: '20140909', endDate: '20160102' }
-                    ]
-                }
+            const generatedUrl = requestFunctions.generateUrisFromCacheStatuses(cacheStatuses, hostUrl);
+            const expected = [
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['MSFT'], '20140909', '20150101'),
+                requestFunctions.constructRetrieveTickerDataUri(hostUrl, ['MSFT'], '20150108', '20160102'),
             ];
 
-            // spy on the functions of the object
-            const reqListSpy = sinon.spy(requestFunctions, "getRequestListObjForCacheStatuses");
-            const constructUriSpy = sinon.spy(requestFunctions, "constructRetrieveTickerDataUri");
-
-            // tested function
-            // inject the spies into the function
-            const uris = requestFunctions.getRequestUrisForCacheStatuses('file:///test.com', cacheStatuses,
-                null, null, requestFunctions);
-
-            // expect behaviour of the function
-            expect(reqListSpy.callCount).to.equal(1);
-            const reqListTotalItem = Object.keys(reqListSpy.returnValues[0]).length;
-            expect(constructUriSpy.callCount).to.equal(reqListTotalItem);
+            expect(generatedUrl.sort()).to.deep.equal(expected.sort());
         });
 
     });

@@ -34,6 +34,7 @@ export class App extends PureComponent {
                     shownDate={this.props.shownDate}
                     // doing deep copy to avoid mutation of stored stock data
                     storedStockData={Object.assign({}, this.props.storedStockData)}
+                    shownStockData={this.props.shownStockData}
                 />
             </main>
         );

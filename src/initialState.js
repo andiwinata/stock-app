@@ -17,7 +17,7 @@ const initialState = {
     selectedDate: initialSelectedDate,
     shownTickers: [],
     shownDate: {},
-    storedStockData: {},
+    shownStockData: {},
     apiKey: null, // to be passed to server if not null
     serverHost
 }
