@@ -5,6 +5,81 @@ import Highcharts from 'highcharts/highstock';
 require('highcharts/modules/exporting')(Highcharts);
 require('highcharts/modules/boost')(Highcharts);
 
+(function applyHighchartsTheme() {
+    Highcharts.theme = {
+        colors: ['#F3E796', '#95C471', '#35729E', '#251735'],
+        colorAxis: {
+            maxColor: '#05426E',
+            minColor: '#F3E796'
+        },
+        plotOptions: {
+            map: {
+                nullColor: '#fcfefe'
+            },
+            candlestick: {
+                lineColor: '#404048'
+            }
+        },
+        navigator: {
+            maskFill: 'rgba(170, 205, 170, 0.5)',
+            series: {
+                color: '#95C471',
+                lineColor: '#35729E'
+            }
+        },
+        chart: {
+            backgroundColor: null,
+            style: {
+                fontFamily: 'Dosis, sans-serif'
+            }
+        },
+        title: {
+            style: {
+                fontSize: '16px',
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+            }
+        },
+        tooltip: {
+            borderWidth: 0,
+            backgroundColor: 'rgba(219,219,216,0.8)',
+            shadow: false
+        },
+        legend: {
+            itemStyle: {
+                fontWeight: 'bold',
+                fontSize: '13px'
+            }
+        },
+        xAxis: {
+            gridLineWidth: 1,
+            labels: {
+                style: {
+                    fontSize: '12px'
+                }
+            }
+        },
+        yAxis: {
+            minorTickInterval: 'auto',
+            title: {
+                style: {
+                    textTransform: 'uppercase'
+                }
+            },
+            labels: {
+                style: {
+                    fontSize: '12px'
+                }
+            }
+        },
+        // General
+        background2: '#F0F0EA'
+    };
+
+    // Apply the theme
+    Highcharts.setOptions(Highcharts.theme);
+})();
+
 // workaround of a bug tooltip not showing up outside chart area
 // https://github.com/highcharts/highcharts/issues/6456
 Highcharts.wrap(Highcharts.Pointer.prototype, 'getHoverData', function (proceed, a, b, c, isDirectTouch, shared, f) {
@@ -25,13 +100,13 @@ class StockChart extends PureComponent {
             chart: {
                 renderTo: 'stockChartContainer'
             },
+            rangeSelector: {
+                enabled: false
+            },
             plotOptions: {
                 series: {
                     showInNavigator: true,
                 }
-            },
-            title: {
-                text: 'Stock Historical'
             },
             xAxis: [{
                 type: 'datetime',

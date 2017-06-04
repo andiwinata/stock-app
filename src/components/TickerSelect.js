@@ -20,6 +20,7 @@ class TickerSelect extends PureComponent {
                     filterOptions={filterOptions}
                     options={options}
                     onChange={this.props.selectedTickerChanged}
+                    placeholder='Select ticker...'
                 />
             </div>
         );

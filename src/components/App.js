@@ -10,22 +10,25 @@ import StockChart from './StockChart';
 import * as actionCreators from '../actionCreators';
 
 import CSSModules from 'react-css-modules';
-import styles from './App.css';
+import styles from './App.scss';
 
 export class App extends PureComponent {
     render() {
         return (
             <main styleName="app-main">
-                <h1>Select Tickers:</h1>
-                <TickerSelect
-                    selectedTickerChanged={this.props.selectedTickerChanged}
-                    selectedTickers={this.props.selectedTickers}
-                />
-                <hr />
-                <DateSelect
-                    selectedDateChanged={this.props.selectedDateChanged}
-                    selectedDate={this.props.selectedDate}
-                />
+                <div styleName="header">
+                    <h1>Stock Chart</h1>
+                </div>
+                <div styleName="controller-container">
+                    <DateSelect
+                        selectedDateChanged={this.props.selectedDateChanged}
+                        selectedDate={this.props.selectedDate}
+                    />
+                    <TickerSelect
+                        selectedTickerChanged={this.props.selectedTickerChanged}
+                        selectedTickers={this.props.selectedTickers}
+                    />
+                </div>
                 <ShownTickers
                     shownTickers={this.props.shownTickers}
                 />
@@ -45,7 +48,7 @@ function mapStateToProps(state) {
     return state;
 }
 
-const AppCSS = CSSModules(App, styles, {allowMultiple: true});
+const AppCSS = CSSModules(App, styles, { allowMultiple: true });
 
 export const AppContainer = connect(
     mapStateToProps,

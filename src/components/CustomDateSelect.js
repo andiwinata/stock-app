@@ -30,8 +30,8 @@ class CustomDateSelect extends PureComponent {
                     onChange={this.customDateChanged('endDate')}
                 />
                 <div>
-                    <button>Cancel</button>
-                    <button>Apply</button>
+                    <button className='btn btn--grey'>Cancel</button>
+                    <button className='btn btn--green'>Apply</button>
                 </div>
             </div>
         );

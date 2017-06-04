@@ -1,0 +1,70 @@
+$maingreen: #95c471;
+$lightgrey: #eee;
+
+.app-main {
+    width: 100%;
+    height: 100vh;
+    display: flex; // needed to contain every children in 1 screen
+    flex-direction: column;
+}
+
+.header {
+    height: 40px;
+    line-height: 40px;
+    background: $maingreen;
+    margin-bottom: 15px;
+    padding: 5px 15px;
+    color: #fff;
+}
+
+.controller-container {
+    display: flex;
+    justify-content: space-between;
+    
+    > * {
+        flex: 1;
+    }
+}
+
+body {
+    font-family: 'Source Sans Pro', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+:global {
+    h1 {
+        margin: 0;
+        padding: 0;
+    }
+
+    %btn {
+        border: 0;
+        padding: 10px;
+        cursor: pointer;
+        transition: border 200ms ease-in-out;
+    }
+
+    .btn--line {
+        @extend %btn;
+        background: none;
+        border-bottom: 3px solid $lightgrey;
+
+        &:hover {
+            border-bottom-color: $maingreen;    
+        }
+    }
+
+    .btn {
+        @extend %btn;
+        border-radius: 5px;
+    }
+
+    .btn--grey {
+        background: $lightgrey;
+    }
+
+    .btn--green {
+        background: $maingreen;
+    }
+}

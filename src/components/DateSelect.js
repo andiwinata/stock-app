@@ -18,9 +18,9 @@ class DateSelect extends PureComponent {
     render() {
         return (
             <div>
-                <button onClick={this.predefinedDateChanged(1, 'years')}>1y</button>
-                <button onClick={this.predefinedDateChanged(6, 'months')}>6m</button>
-                <button onClick={this.predefinedDateChanged(3, 'months')}>3m</button>
+                <button className='btn--line' onClick={this.predefinedDateChanged(1, 'years')}>1y</button>
+                <button className='btn--line' onClick={this.predefinedDateChanged(6, 'months')}>6m</button>
+                <button className='btn--line' onClick={this.predefinedDateChanged(3, 'months')}>3m</button>
                 <CustomDateSelect
                     {...this.props}
                 />
