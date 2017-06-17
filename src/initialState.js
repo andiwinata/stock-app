@@ -1,8 +1,8 @@
 import moment from 'moment';
 
 export const initialSelectedDate = {
-    startDate: moment().subtract(3, "weeks"),
-    endDate: moment()
+    startDate: moment().startOf('day').subtract(1, "week"),
+    endDate: moment().startOf('day')
 };
 
 const isLocal = location.hostname === "localhost" ||

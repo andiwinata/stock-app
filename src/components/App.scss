@@ -18,11 +18,9 @@ $lightgrey: #eee;
 }
 
 .controller-container {
-    display: flex;
-    justify-content: space-between;
-    
-    > * {
-        flex: 1;
+    > div {
+        width: 50%;
+        display: inline-block;
     }
 }
 
@@ -50,7 +48,8 @@ body {
         background: none;
         border-bottom: 3px solid $lightgrey;
 
-        &:hover {
+        &:hover,
+        &.is-active {
             border-bottom-color: $maingreen;    
         }
     }

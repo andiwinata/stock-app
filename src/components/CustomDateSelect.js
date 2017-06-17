@@ -1,37 +1,73 @@
 import React, { PureComponent } from 'react';
 import DatePicker from 'react-datepicker';
+import Button from './Button';
 import 'react-datepicker/dist/react-datepicker.css';
 import moment from 'moment';
 
 class CustomDateSelect extends PureComponent {
-    customDateChanged = (datePropertyName) => (val) => {
-        const changedDateObj = {[datePropertyName]: val};
-        const dateRange = Object.assign({}, this.props.selectedDate, changedDateObj);
-        this.props.selectedDateChanged(dateRange);
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            selectedDate: Object.assign({}, props.selectedDate),
+        };
     }
+
+    componentWillReceiveProps(nextProps) {
+        this.setState(
+            Object.assign(this.state.selectedDate, nextProps.selectedDate),
+        );
+    }
+
+    customDateChanged = (datePropertyName) => (val) => {
+        this.setState(
+            Object.assign(this.state.selectedDate, { [datePropertyName]: val }),
+        );
+    };
+
+    applyButtonClicked = () => {
+        // change the highlight
+        this.props.customDateSelected();
+        // call the store function
+        this.props.selectedDateChanged(Object.assign({}, this.state.selectedDate));
+    };
+
+    cancelButtonClicked = () => {
+        this.setState(
+            Object.assign(this.state.selectedDate, this.props.selectedDate),
+        );
+    };
 
     render() {
         return (
             <div>
                 <DatePicker
                     dateFormat="DD-MMM-YYYY"
-                    selected={this.props.selectedDate.startDate}
+                    selected={this.state.selectedDate.startDate}
                     selectsStart
-                    startDate={this.props.selectedDate.startDate}
-                    endDate={this.props.selectedDate.endDate}
+                    startDate={this.state.selectedDate.startDate}
+                    endDate={this.state.selectedDate.endDate}
                     onChange={this.customDateChanged('startDate')}
                 />
                 <DatePicker
                     dateFormat="DD-MMM-YYYY"
-                    selected={this.props.selectedDate.endDate}
+                    selected={this.state.selectedDate.endDate}
                     selectsEnd
-                    startDate={this.props.selectedDate.startDate}
-                    endDate={this.props.selectedDate.endDate}
+                    startDate={this.state.selectedDate.startDate}
+                    endDate={this.state.selectedDate.endDate}
                     onChange={this.customDateChanged('endDate')}
                 />
                 <div>
-                    <button className='btn btn--grey'>Cancel</button>
-                    <button className='btn btn--green'>Apply</button>
+                    <Button
+                        className='btn btn--grey'
+                        text='Cancel'
+                        onClick={this.cancelButtonClicked}
+                    />
+                    <Button
+                        className='btn btn--green'
+                        text='Apply'
+                        onClick={this.applyButtonClicked}
+                    />
                 </div>
             </div>
         );
