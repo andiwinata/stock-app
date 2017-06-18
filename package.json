@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "babel-polyfill": "^6.23.0",
+    "classnames": "^2.2.5",
     "highcharts": "^5.0.9",
     "lodash.merge": "^4.6.0",
     "lodash.mergewith": "^4.6.0",

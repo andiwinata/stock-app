@@ -33,12 +33,12 @@ class DateSelect extends PureComponent {
             endDate: now
         };
 
-        console.log('datechanged');
         this.props.selectedDateChanged(dateObject);
     }
 
     predefinedButtonClicked = (subtractAmount, substractUnit) => () => {
-        console.log('predefinedbutton clicked');
+        // this setState will not cause this component to re-rendered twice.
+        // after calling this.props.seletedDateChanged, it seems they are batched together
         this.setState({
             selectedDuration: subtractAmount + substractUnit,
         });

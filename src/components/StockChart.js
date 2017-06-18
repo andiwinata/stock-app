@@ -98,7 +98,13 @@ class StockChart extends PureComponent {
     componentDidMount() {
         const options = {
             chart: {
-                renderTo: 'stockChartContainer'
+                events: {
+                    click: function(e) {
+                        // remove focus from currently focused object when clicking on chart
+                        document.activeElement.blur();
+                    }
+                },
+                renderTo: 'stockChartContainer',
             },
             rangeSelector: {
                 enabled: false
