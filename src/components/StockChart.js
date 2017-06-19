@@ -5,6 +5,8 @@ import Highcharts from 'highcharts/highstock';
 require('highcharts/modules/exporting')(Highcharts);
 require('highcharts/modules/boost')(Highcharts);
 
+import { CHART_TYPES } from './ChartType';
+
 (function applyHighchartsTheme() {
     Highcharts.theme = {
         colors: ['#F3E796', '#95C471', '#35729E', '#251735'],
@@ -30,7 +32,7 @@ require('highcharts/modules/boost')(Highcharts);
         chart: {
             backgroundColor: null,
             style: {
-                fontFamily: 'Dosis, sans-serif'
+                fontFamily: "'Source Sans Pro', sans-serif"
             }
         },
         title: {
@@ -52,10 +54,10 @@ require('highcharts/modules/boost')(Highcharts);
             }
         },
         xAxis: {
-            gridLineWidth: 1,
+            gridLineWidth: 2,
             labels: {
                 style: {
-                    fontSize: '12px'
+                    fontSize: '12px',
                 }
             }
         },
@@ -63,7 +65,9 @@ require('highcharts/modules/boost')(Highcharts);
             minorTickInterval: 'auto',
             title: {
                 style: {
-                    textTransform: 'uppercase'
+                    textTransform: 'uppercase',
+                    fontWeight: 'bold',
+                    fontSize: '14px'
                 }
             },
             labels: {
@@ -94,90 +98,107 @@ const groupingUnits = [
     ['month', [1, 2, 3, 4, 6]]
 ];
 
+const chartOnClick = function (e) {
+    // remove focus from currently focused object when clicking on chart
+    document.activeElement.blur();
+};
+
+const priceSeries = {
+    type: 'candlestick',
+    name: '',
+    data: [],
+    dataGrouping: {
+        units: groupingUnits
+    },
+    stickyTracking: true,
+};
+
+const volumeSeries = {
+    type: 'column',
+    name: 'Volume',
+    data: [],
+    yAxis: 1,
+    dataGrouping: {
+        units: groupingUnits
+    },
+    stickyTracking: true,
+};
+
+const chartOptions = {
+    chart: {
+        events: {
+            click: chartOnClick,
+        },
+        renderTo: 'stockChartContainer',
+    },
+    rangeSelector: {
+        enabled: false
+    },
+    plotOptions: {
+        series: {
+            showInNavigator: true,
+        }
+    },
+    xAxis: [{
+        type: 'datetime',
+        dateTimeLabelFormats: {
+            day: '%e of %b'
+        }
+    }],
+    yAxis: [{
+        labels: {
+            align: 'right',
+            x: -3
+        },
+        title: {
+            text: 'Price'
+        },
+        height: '75%',
+        lineWidth: 2,
+        crosshair: true
+    }, {
+        labels: {
+            align: 'right',
+            x: -3
+        },
+        title: {
+            text: 'Volume'
+        },
+        top: '75%',
+        height: '25%',
+        offset: 0,
+        lineWidth: 2
+    }],
+    tooltip: {
+        split: true,
+        shared: true,
+        useHTML: true
+    },
+    series: [priceSeries, volumeSeries],
+};
+
+const getUtcUnix = (date) => moment.utc(date).valueOf();
+
+const datumUnixDateGetter = (datum) => getUtcUnix(datum['date']);
+
+const chartTypeToFields = {
+    [CHART_TYPES.OHLC]: [datumUnixDateGetter, 'adj_open', 'adj_high', 'adj_low', 'adj_close'],
+    [CHART_TYPES.CANDLESTICK]: [datumUnixDateGetter, 'adj_open', 'adj_high', 'adj_low', 'adj_close'],
+    [CHART_TYPES.AREA]: [datumUnixDateGetter, 'adj_close'],
+    [CHART_TYPES.LINE]: [datumUnixDateGetter, 'adj_close'],
+}
+
 class StockChart extends PureComponent {
     componentDidMount() {
-        const options = {
-            chart: {
-                events: {
-                    click: function(e) {
-                        // remove focus from currently focused object when clicking on chart
-                        document.activeElement.blur();
-                    }
-                },
-                renderTo: 'stockChartContainer',
-            },
-            rangeSelector: {
-                enabled: false
-            },
-            plotOptions: {
-                series: {
-                    showInNavigator: true,
-                }
-            },
-            xAxis: [{
-                type: 'datetime',
-                dateTimeLabelFormats: {
-                    day: '%e of %b'
-                }
-            }],
-            yAxis: [{
-                labels: {
-                    align: 'right',
-                    x: -3
-                },
-                title: {
-                    text: 'OHLC'
-                },
-                height: '60%',
-                lineWidth: 2,
-                crosshair: true
-            }, {
-                labels: {
-                    align: 'right',
-                    x: -3
-                },
-                title: {
-                    text: 'Volume'
-                },
-                top: '65%',
-                height: '35%',
-                offset: 0,
-                lineWidth: 2
-            }],
-            tooltip: {
-                split: true,
-                shared: true,
-                useHTML: true
-            },
-            series: [{
-                type: 'candlestick',
-                name: '',
-                data: [],
-                dataGrouping: {
-                    units: groupingUnits
-                },
-                stickyTracking: true,
-            }, {
-                type: 'column',
-                name: 'Volume',
-                data: [],
-                yAxis: 1,
-                dataGrouping: {
-                    units: groupingUnits
-                },
-                stickyTracking: true,
-            }]
-        };
-
-        this.chart = new Highcharts.StockChart(options);
+        this.chart = new Highcharts.StockChart(chartOptions);
     }
 
-    processTickerDataToChartData(tickerData) {
+    processTickerDataToChartData(tickerData, chartType) {
         const ohlc = [];
         const volume = [];
 
         tickerData.forEach(tickerDatum => {
-            const unixDate = moment.utc(tickerDatum['date']).valueOf();
+            const unixDate = getUtcUnix(tickerDatum['date']);
 
             ohlc.push([
                 unixDate,

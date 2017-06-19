@@ -1,5 +1,12 @@
 import * as actionTypes from './actionTypes';
 
+export function chartTypeChanged(chartType) {
+    return {
+        type: actionTypes.CHART_TYPE_CHANGED,
+        chartType
+    }
+}
+
 export function selectedTickerChanged(selectedTickers) {
     // convert to array if not array
     if (selectedTickers.constructor !== Array) {

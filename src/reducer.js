@@ -5,6 +5,15 @@ import merge from 'lodash.merge';
 import moment from 'moment';
 import { initialSelectedDate } from './initialState';
 
+export function chartType(state = '', action) {
+    switch(action.type) {
+        case actionTypes.CHART_TYPE_CHANGED:
+            return action.chartType;
+        default:
+            return state;
+    }
+}
+
 export function selectedTickers(state = [], action) {
     switch (action.type) {
         case actionTypes.SELECTED_TICKER_CHANGED:
@@ -65,6 +74,7 @@ export function serverHost(state = '', action) {
 // using combineReducers to split reducers into smaller functions
 // will automatically returning new state object
 export default combineReducers({
+    chartType,
     selectedTickers,
     selectedDate,
     shownTickers,

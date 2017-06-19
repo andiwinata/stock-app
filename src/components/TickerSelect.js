@@ -14,6 +14,7 @@ class TickerSelect extends PureComponent {
         return (
             <div>
                 <VirtualizedSelect
+                    autoBlur={true}
                     name="form-field-name"
                     // right now just use one ticker
                     value={this.props.selectedTickers[0]}
