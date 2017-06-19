@@ -35,15 +35,15 @@ export class App extends PureComponent {
                             selectedTickers={this.props.selectedTickers}
                         />
                     </div>
-                    <ChartType 
+                    <ChartType
                         chartType={this.props.chartType}
                         chartTypeChanged={this.props.chartTypeChanged}
                     />
                     <ShownTickers
-                        chartType={this.props.chartType}
                         shownTickers={this.props.shownTickers}
                     />
                     <StockChart
+                        chartType={this.props.chartType}
                         shownTickers={this.props.shownTickers}
                         shownDate={this.props.shownDate}
                         // doing deep copy to avoid mutation of stored stock data

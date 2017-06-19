@@ -12,14 +12,20 @@ export const CHART_TYPES = {
     OHLC: 'ohlc',
 }
 
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 const options = Object.keys(CHART_TYPES).map((chartType) => {
     return {
-        label: CHART_TYPES[chartType],
+        label: capitalizeFirstLetter(CHART_TYPES[chartType]),
         value: CHART_TYPES[chartType],
     }
 });
 
 class ChartType extends PureComponent {
+    chartTypeSelectChanged = (val) => this.props.chartTypeChanged(val.value);
+
     render() {
         return (
             <div>
@@ -30,7 +36,7 @@ class ChartType extends PureComponent {
                     value={this.props.chartType}
                     filterOptions={{ options }}
                     options={options}
-                    onChange={this.props.chartTypeChanged}
+                    onChange={this.chartTypeSelectChanged}
                 />
             </div>
         );

@@ -103,80 +103,6 @@ const chartOnClick = function (e) {
     document.activeElement.blur();
 };
 
-const priceSeries = {
-    type: 'candlestick',
-    name: '',
-    data: [],
-    dataGrouping: {
-        units: groupingUnits
-    },
-    stickyTracking: true,
-};
-
-const volumeSeries = {
-    type: 'column',
-    name: 'Volume',
-    data: [],
-    yAxis: 1,
-    dataGrouping: {
-        units: groupingUnits
-    },
-    stickyTracking: true,
-};
-
-const chartOptions = {
-    chart: {
-        events: {
-            click: chartOnClick,
-        },
-        renderTo: 'stockChartContainer',
-    },
-    rangeSelector: {
-        enabled: false
-    },
-    plotOptions: {
-        series: {
-            showInNavigator: true,
-        }
-    },
-    xAxis: [{
-        type: 'datetime',
-        dateTimeLabelFormats: {
-            day: '%e of %b'
-        }
-    }],
-    yAxis: [{
-        labels: {
-            align: 'right',
-            x: -3
-        },
-        title: {
-            text: 'Price'
-        },
-        height: '75%',
-        lineWidth: 2,
-        crosshair: true
-    }, {
-        labels: {
-            align: 'right',
-            x: -3
-        },
-        title: {
-            text: 'Volume'
-        },
-        top: '75%',
-        height: '25%',
-        offset: 0,
-        lineWidth: 2
-    }],
-    tooltip: {
-        split: true,
-        shared: true,
-        useHTML: true
-    },
-    series: [priceSeries, volumeSeries],
-};
-
 const getUtcUnix = (date) => moment.utc(date).valueOf();
 
 const datumUnixDateGetter = (datum) => getUtcUnix(datum['date']);
@@ -190,47 +116,127 @@ const chartTypeToFields = {
 
 class StockChart extends PureComponent {
     componentDidMount() {
+        const priceSeries = {
+            type: this.props.chartType,
+            name: '',
+            data: [],
+            dataGrouping: {
+                units: groupingUnits
+            },
+            stickyTracking: true,
+        };
+
+        const volumeSeries = {
+            type: 'column',
+            name: '',
+            data: [],
+            yAxis: 1,
+            dataGrouping: {
+                units: groupingUnits
+            },
+            stickyTracking: true,
+        };
+
+        const chartOptions = {
+            chart: {
+                events: {
+                    click: chartOnClick,
+                },
+                renderTo: 'stockChartContainer',
+            },
+            rangeSelector: {
+                enabled: false
+            },
+            plotOptions: {
+                series: {
+                    showInNavigator: true,
+                }
+            },
+            xAxis: [{
+                type: 'datetime',
+                dateTimeLabelFormats: {
+                    day: '%e of %b'
+                }
+            }],
+            yAxis: [{
+                labels: {
+                    align: 'right',
+                    x: -3
+                },
+                title: {
+                    text: 'Price'
+                },
+                height: '75%',
+                lineWidth: 2,
+                crosshair: true
+            }, {
+                labels: {
+                    align: 'right',
+                    x: -3
+                },
+                title: {
+                    text: 'Volume'
+                },
+                top: '75%',
+                height: '25%',
+                offset: 0,
+                lineWidth: 2
+            }],
+            tooltip: {
+                split: true,
+                shared: true,
+                useHTML: true
+            },
+            series: [priceSeries, volumeSeries],
+        };
+
         this.chart = new Highcharts.StockChart(chartOptions);
     }
 
     processTickerDataToChartData(tickerData, chartType) {
-        const ohlc = [];
+        const priceData = [];
         const volume = [];
+        console.log('CHART TYPE', chartType);
 
-        tickerData.forEach(tickerDatum => {
-            const unixDate = getUtcUnix(tickerDatum['date']);
+        const selectors = chartTypeToFields[chartType];
 
-            ohlc.push([
-                unixDate,
-                tickerDatum['adj_open'],
-                tickerDatum['adj_high'],
-                tickerDatum['adj_low'],
-                tickerDatum['adj_close']
-            ]);
+        tickerData.forEach((datum) => {
+            // get selected data based on selectors
+            const selectedData = selectors.map((selector) => {
+                // if current selector is function, pass in the datum
+                if (typeof selector === 'function') {
+                    return selector(datum)
+                }
+                // otherwise it should be the string key to datum field
+                return datum[selector];
+            })
 
+            priceData.push(selectedData);
             volume.push([
-                unixDate,
-                tickerDatum['adj_volume']
+                datumUnixDateGetter(datum),
+                datum['adj_volume'],
             ]);
         });
 
-        return { ohlc, volume };
+        return { priceData, volume };
     }
 
     componentWillReceiveProps(nextProps) {
         // don't render new chart unless the data has been changed
-        if (this.props.shownStockData === nextProps.shownStockData) {
+        // or chart type has been changed
+        if (this.props.shownStockData === nextProps.shownStockData &&
+            this.props.chartType === nextProps.chartType) {
             return;
         }
 
-        console.log('DRAWING STOCK CHART!');
+        console.log('DRAWING STOCK CHART!', nextProps);
         const { startDate, endDate } = nextProps.shownDate;
         if (!startDate || !endDate || !nextProps.shownTickers || nextProps.shownTickers.length === 0) {
             return;
         }
 
         const tickerData = nextProps.shownStockData[nextProps.shownTickers[0].value];
-        let ohlc, volume;
+        let priceData, volume;
         // ticker data can be empty from API
         if (!tickerData) {
             // if the chart data is already empty, then dont redraw empty chart
@@ -238,21 +244,22 @@ class StockChart extends PureComponent {
                 return;
             } else {
                 // else draw empty chart
-                ohlc = volume = [];
+                priceData = volume = [];
             }
         } else {
             // get ticker data for ticker name (right now only do the first one)
-            ({ ohlc, volume } = this.processTickerDataToChartData(tickerData));
+            ({ priceData, volume } = this.processTickerDataToChartData(tickerData, nextProps.chartType));
         }
 
         this.chart.series[0].update({
-            data: ohlc,
-            name: nextProps.shownTickers[0].value
+            data: priceData,
+            name: nextProps.shownTickers[0].value,
+            type: nextProps.chartType,
         }, false);
 
         this.chart.series[1].update({
             data: volume,
-            name: nextProps.shownTickers[0].value
+            name: nextProps.shownTickers[0].value,
         });
     }
 
