@@ -1,0 +1,26 @@
+@import '../sass/colours';
+
+.tickerSelectContainer {
+    width: 80%;
+    margin-left: auto;
+}
+
+// overriding react-select css
+.tickerSelect {
+    height: 100%;
+    
+    :global {
+        .Select-control {
+            height: 100%;
+            border: 0;
+            border-radius: 0;
+            background: $lightgrey;
+
+            .Select-placeholder,
+            .Select-input,
+            .Select-value {
+                line-height: 40px;
+            }
+        }
+    }
+}

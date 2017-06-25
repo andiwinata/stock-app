@@ -3,6 +3,7 @@ import CustomDateSelect from './CustomDateSelect';
 import moment from 'moment';
 import Button from './Button';
 import classNames from 'classnames';
+import styles from './DateSelect.scss';
 
 const now = moment().startOf('day');
 
@@ -49,6 +50,7 @@ class DateSelect extends PureComponent {
         return classNames({
             'btn--line': true,
             'is-active': identifier === this.state.selectedDuration,
+            [styles.predefinedButton]: true,
         });
     }
 
@@ -60,32 +62,34 @@ class DateSelect extends PureComponent {
 
     render() {
         return (
-            <div>
-                <Button
-                    className={this.generatePredefinedButtonClassName('1weeks')}
-                    onClick={this.predefinedButtonClicked(1, 'weeks')}
-                    text={'1w'}
-                />
-                <Button
-                    className={this.generatePredefinedButtonClassName('1months')}
-                    onClick={this.predefinedButtonClicked(1, 'months')}
-                    text={'1m'}
-                />
-                <Button
-                    className={this.generatePredefinedButtonClassName('3months')}
-                    onClick={this.predefinedButtonClicked(3, 'months')}
-                    text={'3m'}
-                />
-                <Button
-                    className={this.generatePredefinedButtonClassName('6months')}
-                    onClick={this.predefinedButtonClicked(6, 'months')}
-                    text={'6m'}
-                />
-                <Button
-                    className={this.generatePredefinedButtonClassName('1years')}
-                    onClick={this.predefinedButtonClicked(1, 'years')}
-                    text={'1y'}
-                />
+            <div className={styles.dateSelectContainer}>
+                <div className={styles.predefinedButtonsContainer}>
+                    <Button
+                        className={this.generatePredefinedButtonClassName('1weeks')}
+                        onClick={this.predefinedButtonClicked(1, 'weeks')}
+                        text={'1w'}
+                    />
+                    <Button
+                        className={this.generatePredefinedButtonClassName('1months')}
+                        onClick={this.predefinedButtonClicked(1, 'months')}
+                        text={'1m'}
+                    />
+                    <Button
+                        className={this.generatePredefinedButtonClassName('3months')}
+                        onClick={this.predefinedButtonClicked(3, 'months')}
+                        text={'3m'}
+                    />
+                    <Button
+                        className={this.generatePredefinedButtonClassName('6months')}
+                        onClick={this.predefinedButtonClicked(6, 'months')}
+                        text={'6m'}
+                    />
+                    <Button
+                        className={this.generatePredefinedButtonClassName('1years')}
+                        onClick={this.predefinedButtonClicked(1, 'years')}
+                        text={'1y'}
+                    />
+                </div>
                 <CustomDateSelect
                     {...this.props}
                     customDateSelected={this.customDateSelected}

@@ -3,6 +3,7 @@ import DatePicker from 'react-datepicker';
 import Button from './Button';
 import 'react-datepicker/dist/react-datepicker.css';
 import moment from 'moment';
+import styles from './CustomDateSelect.scss';
 
 class CustomDateSelect extends PureComponent {
     constructor(props) {
@@ -40,8 +41,9 @@ class CustomDateSelect extends PureComponent {
 
     render() {
         return (
-            <div>
+            <div className={styles.customDateContainer}>
                 <DatePicker
+                    className={styles.datePicker}
                     dateFormat="DD-MMM-YYYY"
                     selected={this.state.selectedDate.startDate}
                     selectsStart
@@ -50,6 +52,7 @@ class CustomDateSelect extends PureComponent {
                     onChange={this.customDateChanged('startDate')}
                 />
                 <DatePicker
+                    className={styles.datePicker}
                     dateFormat="DD-MMM-YYYY"
                     selected={this.state.selectedDate.endDate}
                     selectsEnd
@@ -57,7 +60,7 @@ class CustomDateSelect extends PureComponent {
                     endDate={this.state.selectedDate.endDate}
                     onChange={this.customDateChanged('endDate')}
                 />
-                <div>
+                <div className={styles.buttonsContainer}>
                     <Button
                         className='btn btn--grey'
                         text='Cancel'

@@ -19,12 +19,19 @@ export class App extends PureComponent {
         return (
             <div styleName="app-wrap">
                 <Helmet>
-                    <link href="https://fonts.googleapis.com/css?family=Fira+Sans:400,700" rel="stylesheet" />
+                    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" />
                 </Helmet>
                 <div styleName="header">
                     <h1>Stock Chart</h1>
                 </div>
                 <main styleName="app-main">
+                    <ChartType
+                        chartType={this.props.chartType}
+                        chartTypeChanged={this.props.chartTypeChanged}
+                    />
+                    <ShownTickers
+                        shownTickers={this.props.shownTickers}
+                    />
                     <div styleName="controller-container">
                         <DateSelect
                             selectedDateChanged={this.props.selectedDateChanged}
@@ -35,13 +42,6 @@ export class App extends PureComponent {
                             selectedTickers={this.props.selectedTickers}
                         />
                     </div>
-                    <ChartType
-                        chartType={this.props.chartType}
-                        chartTypeChanged={this.props.chartTypeChanged}
-                    />
-                    <ShownTickers
-                        shownTickers={this.props.shownTickers}
-                    />
                     <StockChart
                         chartType={this.props.chartType}
                         shownTickers={this.props.shownTickers}

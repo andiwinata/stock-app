@@ -1,0 +1,21 @@
+@import '../sass/colours';
+
+.dateSelectContainer {
+    vertical-align: top;
+}
+
+.predefinedButton {
+    height: 100%;
+    padding: 0 15px;
+    transition: background 200ms ease-in-out, color 200ms ease-in-out;
+
+    &:hover,
+    &.is-active {
+        background: $primaryColour;
+        color: #fff;
+    }
+}
+
+.predefinedButtonsContainer {
+    display: inline-block;
+}

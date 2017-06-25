@@ -1,6 +1,8 @@
 import React, { PureComponent } from 'react';
 import moment from 'moment';
 
+import styles from './StockChart.scss';
+
 import Highcharts from 'highcharts/highstock';
 require('highcharts/modules/exporting')(Highcharts);
 require('highcharts/modules/boost')(Highcharts);
@@ -265,7 +267,7 @@ class StockChart extends PureComponent {
 
     render() {
         return (
-            <div id='stockChartContainer' style={{ height: "100%" }}>
+            <div id='stockChartContainer' className={styles.stockChartContainer}>
 
             </div>
         );

@@ -1,0 +1,31 @@
+@import '../sass/colours';
+
+.customDateContainer,
+.buttonsContainer {
+    display: inline-block;
+
+    input, 
+    button {
+        height: 100%;
+    }
+
+    input {
+        padding: 0 5px;
+        width: 100px;
+        border: 1px solid $lightgrey;
+    }
+
+    button {
+        + button {
+            margin-left: 10px;
+        }
+    }
+}
+
+.customDateContainer {
+    margin-left: 30px;
+}
+
+.buttonsContainer {
+    margin-left: 20px;
+}
