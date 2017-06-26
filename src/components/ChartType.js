@@ -2,8 +2,10 @@ import React, { PureComponent } from 'react';
 
 import VirtualizedSelect from 'react-virtualized-select';
 import 'react-select/dist/react-select.css';
-import 'react-virtualized/styles.css'
-import 'react-virtualized-select/styles.css'
+import 'react-virtualized/styles.css';
+import 'react-virtualized-select/styles.css';
+
+import styles from './ChartType.scss'
 
 export const CHART_TYPES = {
     AREA: 'area',
@@ -28,7 +30,7 @@ class ChartType extends PureComponent {
 
     render() {
         return (
-            <div>
+            <div className={styles.chartTypeContainer}>
                 <VirtualizedSelect
                     autoBlur={true}
                     clearable={false}

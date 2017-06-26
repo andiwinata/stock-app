@@ -1,0 +1,21 @@
+@import '../sass/core';
+
+.chartTypeContainer {
+    :global {
+        .Select-control {
+            height: 100%;
+            border: 0;
+            border-radius: 0;
+            width: 80%;
+            margin-left: auto;
+            background: $lightPrimaryColour;
+            
+            .Select-placeholder,
+            .Select-input,
+            .Select-value {
+                line-height: 40px !important;
+                padding: 0 1rem;
+            }
+        }
+    }
+}

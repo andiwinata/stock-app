@@ -1,25 +1,33 @@
-@import '../sass/colours';
+@import '../sass/core';
 
 .tickerSelectContainer {
-    width: 80%;
-    margin-left: auto;
+    @extend %shadow;
+    margin: 1rem 0;
+    height: 4rem;
+    border-bottom: 3px solid #95c471;
 }
 
 // overriding react-select css
 .tickerSelect {
     height: 100%;
-    
+
     :global {
+        .VirtualizedSelectOption {
+            padding: 0 1rem;
+        }
+
         .Select-control {
             height: 100%;
             border: 0;
             border-radius: 0;
-            background: $lightgrey;
-
+            
             .Select-placeholder,
             .Select-input,
             .Select-value {
-                line-height: 40px;
+                font-weight: bold;
+                line-height: 4rem !important;
+                font-size: 2rem;
+                padding: 0 1rem;
             }
         }
     }
