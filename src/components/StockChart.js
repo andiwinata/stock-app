@@ -11,42 +11,47 @@ import { CHART_TYPES } from './ChartType';
 
 (function applyHighchartsTheme() {
     Highcharts.theme = {
-        colors: ['#F3E796', '#95C471', '#35729E', '#251735'],
+        colors: ['#222', '#222', '#35729E', '#251735'],
         colorAxis: {
             maxColor: '#05426E',
             minColor: '#F3E796'
         },
         plotOptions: {
+            area: {
+                fillOpacity: 0.2,
+            },
             map: {
                 nullColor: '#fcfefe'
             },
             candlestick: {
-                lineColor: '#404048'
+                lineColor: '#222',
+                upColor: '#fff',
             }
         },
         navigator: {
-            maskFill: 'rgba(170, 205, 170, 0.5)',
+            maskFill: 'rgba(128, 128, 128, 0.5)',
             series: {
-                color: '#95C471',
-                lineColor: '#35729E'
+                color: '#222',
+                lineColor: '#222',
+                fillOpacity: 0.075,
             }
         },
         chart: {
             backgroundColor: null,
             style: {
-                fontFamily: "'Source Sans Pro', sans-serif"
+                fontFamily: "'Roboto', sans-serif"
             }
         },
         title: {
             style: {
                 fontSize: '16px',
                 fontWeight: 'bold',
-                textTransform: 'uppercase'
+                textTransform: 'uppercase',
             }
         },
         tooltip: {
             borderWidth: 0,
-            backgroundColor: 'rgba(219,219,216,0.8)',
+            backgroundColor: 'rgba(219, 219, 216, 0.97)',
             shadow: false
         },
         legend: {
@@ -61,7 +66,9 @@ import { CHART_TYPES } from './ChartType';
                 style: {
                     fontSize: '12px',
                 }
-            }
+            },
+            lineColor: '#222',
+            lineWidth: 0,
         },
         yAxis: {
             minorTickInterval: 'auto',
@@ -69,14 +76,17 @@ import { CHART_TYPES } from './ChartType';
                 style: {
                     textTransform: 'uppercase',
                     fontWeight: 'bold',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    color: '#222',
                 }
             },
             labels: {
                 style: {
                     fontSize: '12px'
                 }
-            }
+            },
+            lineColor: '#222',
+            lineWidth: 0,
         },
         // General
         background2: '#F0F0EA'
@@ -162,18 +172,17 @@ class StockChart extends PureComponent {
             }],
             yAxis: [{
                 labels: {
-                    align: 'right',
+                    align: 'left',
                     x: -3
                 },
                 title: {
                     text: 'Price'
                 },
                 height: '75%',
-                lineWidth: 2,
                 crosshair: true
             }, {
                 labels: {
-                    align: 'right',
+                    align: 'left',
                     x: -3
                 },
                 title: {
@@ -182,7 +191,6 @@ class StockChart extends PureComponent {
                 top: '75%',
                 height: '25%',
                 offset: 0,
-                lineWidth: 2
             }],
             tooltip: {
                 split: true,

@@ -4,7 +4,7 @@
     @extend %shadow;
     margin: 1rem 0;
     height: 4rem;
-    border-bottom: 3px solid #95c471;
+    border-bottom: 3px solid $primaryColour;
 }
 
 // overriding react-select css
@@ -14,6 +14,11 @@
     :global {
         .VirtualizedSelectOption {
             padding: 0 1rem;
+        }
+
+        .VirtualizedSelectFocusedOption {
+            background-color: $secondaryColour;
+            color: #fff;
         }
 
         .Select-control {
