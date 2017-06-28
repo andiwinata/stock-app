@@ -1,7 +1,13 @@
 @import '../sass/core';
 
 .dateSelectContainer {
+    @extend %shadow;
+    border-bottom: 3px solid $primaryColour;
+    background: #fff;
     vertical-align: top;
+    width: calc(60% - 1rem);
+    margin-right: 1rem;
+    display: inline-block;
 }
 
 .predefinedButton {
@@ -10,7 +16,7 @@
     transition: background 200ms ease-in-out, color 200ms ease-in-out;
 
     &:hover,
-    &.is-active {
+    &.isActive {
         background: $primaryColour;
         color: #fff;
     }

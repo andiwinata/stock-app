@@ -51,6 +51,7 @@ class CustomDateSelect extends PureComponent {
                     endDate={this.state.selectedDate.endDate}
                     onChange={this.customDateChanged('startDate')}
                 />
+                <span className={styles.betweenDate}>to</span>
                 <DatePicker
                     className={styles.datePicker}
                     dateFormat="DD-MMM-YYYY"
@@ -62,12 +63,12 @@ class CustomDateSelect extends PureComponent {
                 />
                 <div className={styles.buttonsContainer}>
                     <Button
-                        className='btn btn--grey'
+                        className={['btn', styles.buttonCancel]}
                         text='Cancel'
                         onClick={this.cancelButtonClicked}
                     />
                     <Button
-                        className='btn btn--green'
+                        className={['btn', styles.buttonApply]}
                         text='Apply'
                         onClick={this.applyButtonClicked}
                     />

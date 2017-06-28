@@ -49,7 +49,7 @@ class DateSelect extends PureComponent {
     generatePredefinedButtonClassName = (identifier) => {
         return classNames({
             'btn--line': true,
-            'is-active': identifier === this.state.selectedDuration,
+            [styles.isActive]: identifier === this.state.selectedDuration,
             [styles.predefinedButton]: true,
         });
     }

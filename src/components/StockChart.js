@@ -28,6 +28,23 @@ import { CHART_TYPES } from './ChartType';
                 upColor: '#fff',
             }
         },
+        navigation: {
+            buttonOptions: {
+                theme: {
+                    fill: 'transparent',
+                    r: 0,
+                    states: {
+                        hover: {
+                            fill: '#ddd',
+                            stroke: 'transparent',
+                        }
+                    }
+                }
+            },
+            menuItemHoverStyle: {
+                background: '#888',
+            }
+        },
         navigator: {
             maskFill: 'rgba(128, 128, 128, 0.5)',
             series: {

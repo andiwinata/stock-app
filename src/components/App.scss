@@ -34,16 +34,8 @@
 }
 
 .controller-container {
-    @extend %shadow;
     height: 40px;
-    background: #fff;
-    border-bottom: 3px solid $primaryColour;
     margin-bottom: 1rem;
-
-    > div {
-        width: 50%;
-        display: inline-block;
-    }
 }
 
 body,
@@ -75,13 +67,5 @@ body {
 
     .btn {
         @extend %btn;
-    }
-
-    .btn--grey {
-        background: $lightgrey;
-    }
-
-    .btn--green {
-        background: $primaryColour;
     }
 }
