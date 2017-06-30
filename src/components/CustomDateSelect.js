@@ -43,7 +43,7 @@ class CustomDateSelect extends PureComponent {
         return (
             <div className={styles.customDateContainer}>
                 <DatePicker
-                    className={styles.datePicker}
+                    calendarClassName={styles.datePickerCalendar}
                     dateFormat="DD-MMM-YYYY"
                     selected={this.state.selectedDate.startDate}
                     selectsStart
@@ -53,7 +53,7 @@ class CustomDateSelect extends PureComponent {
                 />
                 <span className={styles.betweenDate}>to</span>
                 <DatePicker
-                    className={styles.datePicker}
+                    calendarClassName={styles.datePickerCalendar}
                     dateFormat="DD-MMM-YYYY"
                     selected={this.state.selectedDate.endDate}
                     selectsEnd

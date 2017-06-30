@@ -24,6 +24,11 @@
             .Select-value {
                 line-height: 40px !important;
                 padding: 0 1rem;
+
+                > input {
+                    padding: 0;
+                    line-height: 40px;
+                }
             }
         }
     }

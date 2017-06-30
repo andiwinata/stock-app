@@ -7,7 +7,8 @@
     input {
         padding: 0 5px;
         height: 25px;
-        width: 85px;
+        width: 90px;
+        text-align: center;
         border: none;
         border-bottom: 3px solid $primaryColourComplement;
         cursor: pointer;
@@ -27,7 +28,6 @@
 
 .betweenDate {
     margin: 0 1rem;
-    font-size: 13px;
 }
 
 .customDateContainer {
@@ -60,5 +60,18 @@
     &:hover {
         background: $secondaryColour;
         color: #000;
+    }
+}
+
+.datePickerCalendar {
+    :global {
+        .react-datepicker__day--in-range {
+            background: $primaryColour;
+            color: #fff;
+        }
+
+        .react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range) {
+            background: $secondaryColour;
+        }
     }
 }
