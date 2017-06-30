@@ -1,9 +1,117 @@
 import React, { PureComponent } from 'react';
 import moment from 'moment';
 
+import styles from './StockChart.scss';
+
 import Highcharts from 'highcharts/highstock';
 require('highcharts/modules/exporting')(Highcharts);
 require('highcharts/modules/boost')(Highcharts);
+
+import { CHART_TYPES } from './ChartType';
+
+(function applyHighchartsTheme() {
+    Highcharts.theme = {
+        colors: ['#222', '#222', '#35729E', '#251735'],
+        colorAxis: {
+            maxColor: '#05426E',
+            minColor: '#F3E796'
+        },
+        plotOptions: {
+            area: {
+                fillOpacity: 0.2,
+            },
+            map: {
+                nullColor: '#fcfefe'
+            },
+            candlestick: {
+                lineColor: '#222',
+                upColor: '#fff',
+            }
+        },
+        navigation: {
+            buttonOptions: {
+                theme: {
+                    fill: 'transparent',
+                    r: 0,
+                    states: {
+                        hover: {
+                            fill: '#ddd',
+                            stroke: 'transparent',
+                        }
+                    }
+                }
+            },
+            menuItemHoverStyle: {
+                background: '#888',
+            }
+        },
+        navigator: {
+            maskFill: 'rgba(128, 128, 128, 0.5)',
+            series: {
+                color: '#222',
+                lineColor: '#222',
+                fillOpacity: 0.075,
+            }
+        },
+        chart: {
+            backgroundColor: null,
+            style: {
+                fontFamily: "'Roboto', sans-serif"
+            }
+        },
+        title: {
+            style: {
+                fontSize: '16px',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+            }
+        },
+        tooltip: {
+            borderWidth: 0,
+            backgroundColor: 'rgba(219, 219, 216, 0.97)',
+            shadow: false
+        },
+        legend: {
+            itemStyle: {
+                fontWeight: 'bold',
+                fontSize: '13px'
+            }
+        },
+        xAxis: {
+            gridLineWidth: 2,
+            labels: {
+                style: {
+                    fontSize: '12px',
+                }
+            },
+            lineColor: '#222',
+            lineWidth: 0,
+        },
+        yAxis: {
+            minorTickInterval: 'auto',
+            title: {
+                style: {
+                    textTransform: 'uppercase',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    color: '#222',
+                }
+            },
+            labels: {
+                style: {
+                    fontSize: '12px'
+                }
+            },
+            lineColor: '#222',
+            lineWidth: 0,
+        },
+        // General
+        background2: '#F0F0EA'
+    };
+
+    // Apply the theme
+    Highcharts.setOptions(Highcharts.theme);
+})();
 
 // workaround of a bug tooltip not showing up outside chart area
 // https://github.com/highcharts/highcharts/issues/6456
@@ -19,19 +127,59 @@ const groupingUnits = [
     ['month', [1, 2, 3, 4, 6]]
 ];
 
+const chartOnClick = function (e) {
+    // remove focus from currently focused object when clicking on chart
+    document.activeElement.blur();
+};
+
+const getUtcUnix = (date) => moment.utc(date).valueOf();
+
+const datumUnixDateGetter = (datum) => getUtcUnix(datum['date']);
+
+const chartTypeToFields = {
+    [CHART_TYPES.OHLC]: [datumUnixDateGetter, 'adj_open', 'adj_high', 'adj_low', 'adj_close'],
+    [CHART_TYPES.CANDLESTICK]: [datumUnixDateGetter, 'adj_open', 'adj_high', 'adj_low', 'adj_close'],
+    [CHART_TYPES.AREA]: [datumUnixDateGetter, 'adj_close'],
+    [CHART_TYPES.LINE]: [datumUnixDateGetter, 'adj_close'],
+}
+
 class StockChart extends PureComponent {
     componentDidMount() {
-        const options = {
+        const priceSeries = {
+            type: this.props.chartType,
+            name: '',
+            data: [],
+            dataGrouping: {
+                units: groupingUnits
+            },
+            stickyTracking: true,
+        };
+
+        const volumeSeries = {
+            type: 'column',
+            name: '',
+            data: [],
+            yAxis: 1,
+            dataGrouping: {
+                units: groupingUnits
+            },
+            stickyTracking: true,
+        };
+
+        const chartOptions = {
             chart: {
-                renderTo: 'stockChartContainer'
+                events: {
+                    click: chartOnClick,
+                },
+                renderTo: 'stockChartContainer',
+            },
+            rangeSelector: {
+                enabled: false
             },
             plotOptions: {
                 series: {
                     showInNavigator: true,
                 }
-            },
-            title: {
-                text: 'Stock Historical'
             },
             xAxis: [{
                 type: 'datetime',
@@ -41,94 +189,81 @@ class StockChart extends PureComponent {
             }],
             yAxis: [{
                 labels: {
-                    align: 'right',
+                    align: 'left',
                     x: -3
                 },
                 title: {
-                    text: 'OHLC'
+                    text: 'Price'
                 },
-                height: '60%',
-                lineWidth: 2,
+                height: '75%',
                 crosshair: true
             }, {
                 labels: {
-                    align: 'right',
+                    align: 'left',
                     x: -3
                 },
                 title: {
                     text: 'Volume'
                 },
-                top: '65%',
-                height: '35%',
+                top: '75%',
+                height: '25%',
                 offset: 0,
-                lineWidth: 2
             }],
             tooltip: {
                 split: true,
                 shared: true,
                 useHTML: true
             },
-            series: [{
-                type: 'candlestick',
-                name: '',
-                data: [],
-                dataGrouping: {
-                    units: groupingUnits
-                },
-                stickyTracking: true,
-            }, {
-                type: 'column',
-                name: 'Volume',
-                data: [],
-                yAxis: 1,
-                dataGrouping: {
-                    units: groupingUnits
-                },
-                stickyTracking: true,
-            }]
+            series: [priceSeries, volumeSeries],
         };
 
-        this.chart = new Highcharts.StockChart(options);
+        this.chart = new Highcharts.StockChart(chartOptions);
     }
 
-    processTickerDataToChartData(tickerData) {
-        const ohlc = [];
+    processTickerDataToChartData(tickerData, chartType) {
+        const priceData = [];
         const volume = [];
+        console.log('CHART TYPE', chartType);
 
-        tickerData.forEach(tickerDatum => {
-            const unixDate = moment.utc(tickerDatum['date']).valueOf();
+        const selectors = chartTypeToFields[chartType];
 
-            ohlc.push([
-                unixDate,
-                tickerDatum['adj_open'],
-                tickerDatum['adj_high'],
-                tickerDatum['adj_low'],
-                tickerDatum['adj_close']
-            ]);
+        tickerData.forEach((datum) => {
+            // get selected data based on selectors
+            const selectedData = selectors.map((selector) => {
+                // if current selector is function, pass in the datum
+                if (typeof selector === 'function') {
+                    return selector(datum)
+                }
+                // otherwise it should be the string key to datum field
+                return datum[selector];
+            })
 
+            priceData.push(selectedData);
             volume.push([
-                unixDate,
-                tickerDatum['adj_volume']
+                datumUnixDateGetter(datum),
+                datum['adj_volume'],
             ]);
         });
 
-        return { ohlc, volume };
+        return { priceData, volume };
     }
 
     componentWillReceiveProps(nextProps) {
         // don't render new chart unless the data has been changed
-        if (this.props.shownStockData === nextProps.shownStockData) {
+        // or chart type has been changed
+        if (this.props.shownStockData === nextProps.shownStockData &&
+            this.props.chartType === nextProps.chartType) {
             return;
         }
 
-        console.log('DRAWING STOCK CHART!');
+        console.log('DRAWING STOCK CHART!', nextProps);
         const { startDate, endDate } = nextProps.shownDate;
         if (!startDate || !endDate || !nextProps.shownTickers || nextProps.shownTickers.length === 0) {
             return;
         }
 
         const tickerData = nextProps.shownStockData[nextProps.shownTickers[0].value];
-        let ohlc, volume;
+        let priceData, volume;
         // ticker data can be empty from API
         if (!tickerData) {
             // if the chart data is already empty, then dont redraw empty chart
@@ -136,27 +271,28 @@ class StockChart extends PureComponent {
                 return;
             } else {
                 // else draw empty chart
-                ohlc = volume = [];
+                priceData = volume = [];
             }
         } else {
             // get ticker data for ticker name (right now only do the first one)
-            ({ ohlc, volume } = this.processTickerDataToChartData(tickerData));
+            ({ priceData, volume } = this.processTickerDataToChartData(tickerData, nextProps.chartType));
         }
 
         this.chart.series[0].update({
-            data: ohlc,
-            name: nextProps.shownTickers[0].value
+            data: priceData,
+            name: nextProps.shownTickers[0].value,
+            type: nextProps.chartType,
         }, false);
 
         this.chart.series[1].update({
             data: volume,
-            name: nextProps.shownTickers[0].value
+            name: nextProps.shownTickers[0].value,
         });
     }
 
     render() {
         return (
-            <div id='stockChartContainer' style={{ height: "100%" }}>
+            <div id='stockChartContainer' className={styles.stockChartContainer}>
 
             </div>
         );

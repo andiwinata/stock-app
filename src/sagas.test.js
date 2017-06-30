@@ -294,7 +294,6 @@ describe('SAGA selectedDataChanged test', () => {
         ];
 
         const mergedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
-        const mergedProcessedJsonData = mergedProcessedJson['GOOG'];
 
         const allTickerData = mergeWith({}, { GOOG: cachedData }, mergedProcessedJson, mergeWithArrayConcat);
         // sort partial data
@@ -310,7 +309,7 @@ describe('SAGA selectedDataChanged test', () => {
         const nextGenValue = gen.next(processedJsons).value;
         expect(nextGenValue).to.deep.equal([
             putAction,
-            call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate),
+            call(quandlIDB.putTickerData, [].concat(...Object.values(allTickerData)), requestStartDate, requestEndDate),
         ]);
 
         done();
@@ -449,12 +448,12 @@ describe('SAGA selectedDataChanged test', () => {
             selectedData.dateRange
         ));
 
-        const mergedProcessedJsonData = [].concat(...Object.values(mergedProcessedJson));
+        const allTickerJsonData = [].concat(...Object.values(allTickerData));
 
         const nextGenValue = gen.next(processedJsons).value;
         expect(nextGenValue).to.deep.equal([
             putAction,
-            call(quandlIDB.putTickerData, mergedProcessedJsonData, requestStartDate, requestEndDate)
+            call(quandlIDB.putTickerData, allTickerJsonData, requestStartDate, requestEndDate)
         ]);
 
         done();

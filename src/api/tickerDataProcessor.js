@@ -1,7 +1,7 @@
 import merge from 'lodash.merge';
 import moment from 'moment';
 
-export function processQuandlJsonIDB(jsonData, reqStartDate, reqEndDate, dateFormat = 'YYYYMMDD') {
+export function processQuandlJsonIDB(jsonData, dateFormat = 'YYYYMMDD') {
     const columnsName = jsonData.datatable.columns;
 
     let jsonColumnNameToArrayIndex = {};

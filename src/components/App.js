@@ -1,42 +1,57 @@
 import React, { PureComponent } from 'react';
 
 import { connect } from 'react-redux';
+import { Helmet } from 'react-helmet';
 
 import TickerSelect from './TickerSelect';
 import ShownTickers from './ShownTickers';
 import DateSelect from './DateSelect';
 import StockChart from './StockChart';
+import ChartType from './ChartType';
 
 import * as actionCreators from '../actionCreators';
 
 import CSSModules from 'react-css-modules';
-import styles from './App.css';
+import styles from './App.scss';
 
 export class App extends PureComponent {
     render() {
         return (
-            <main styleName="app-main">
-                <h1>Select Tickers:</h1>
-                <TickerSelect
-                    selectedTickerChanged={this.props.selectedTickerChanged}
-                    selectedTickers={this.props.selectedTickers}
-                />
-                <hr />
-                <DateSelect
-                    selectedDateChanged={this.props.selectedDateChanged}
-                    selectedDate={this.props.selectedDate}
-                />
-                <ShownTickers
-                    shownTickers={this.props.shownTickers}
-                />
-                <StockChart
-                    shownTickers={this.props.shownTickers}
-                    shownDate={this.props.shownDate}
-                    // doing deep copy to avoid mutation of stored stock data
-                    storedStockData={Object.assign({}, this.props.storedStockData)}
-                    shownStockData={this.props.shownStockData}
-                />
-            </main>
+            <div styleName="app-wrap">
+                <Helmet>
+                    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" />
+                </Helmet>
+                <header styleName="header">
+                    <h1>Stock Chart</h1>
+                </header>
+                <main styleName="app-main">
+                    <TickerSelect
+                        selectedTickerChanged={this.props.selectedTickerChanged}
+                        selectedTickers={this.props.selectedTickers}
+                    />
+                    {/*<ShownTickers
+                        shownTickers={this.props.shownTickers}
+                    />*/}
+                    <div styleName="controller-container">
+                        <DateSelect
+                            selectedDateChanged={this.props.selectedDateChanged}
+                            selectedDate={this.props.selectedDate}
+                        />
+                        <ChartType
+                            chartType={this.props.chartType}
+                            chartTypeChanged={this.props.chartTypeChanged}
+                        />
+                    </div>
+                    <StockChart
+                        chartType={this.props.chartType}
+                        shownTickers={this.props.shownTickers}
+                        shownDate={this.props.shownDate}
+                        // doing deep copy to avoid mutation of stored stock data
+                        storedStockData={Object.assign({}, this.props.storedStockData)}
+                        shownStockData={this.props.shownStockData}
+                    />
+                </main>
+            </div>
         );
     }
 }
@@ -45,7 +60,7 @@ function mapStateToProps(state) {
     return state;
 }
 
-const AppCSS = CSSModules(App, styles, {allowMultiple: true});
+const AppCSS = CSSModules(App, styles, { allowMultiple: true });
 
 export const AppContainer = connect(
     mapStateToProps,

@@ -18,8 +18,8 @@ module.exports = {
                 exclude: /node_modules/
             },
             {
-                // css modules for non node_modules
-                test: /\.css$/,
+                // css and sass modules for non node_modules
+                test: /\.(css|scss)$/,
                 exclude: /node_modules/,
                 use: [
                     {
@@ -35,6 +35,10 @@ module.exports = {
                             importLoaders: 1,
                             localIdentName: '[path][name]__[local]--[hash:base64:5]'
                         }
+                    },
+                    {
+                        loader: 'sass-loader',
+                        options: { sourceMap: true }
                     }
                 ]
             },

@@ -91,12 +91,12 @@ export function* selectedDataChanged(action) {
     const jsonResponses = yield uris.map(uri => call(fetchJson, uri));
     // processingJson is not async, but using yield instead for easier test
     const processedJsons = yield jsonResponses.map(jsonResp =>
-        call(processQuandlJsonIDB, jsonResp, startDate, endDate)
+        call(processQuandlJsonIDB, jsonResp)
     );
     // combine processedJson into 1 object
     const combinedProcessedJson = mergeWith({}, ...processedJsons, mergeWithArrayConcat);
 
-    // concatenate the cached data into one
+    // concatenate the cached data into one (the fully cached one and the partially cached)
     const tickerData = convertCacheStatusesToActionTickerData(fullyCachedStatuses, partiallyCachedStatuses);
 
     // merge cached data with responses data
@@ -107,8 +107,13 @@ export function* selectedDataChanged(action) {
         tickerData[status.tickerName].sort(stockDataComparerDate);
     });
 
-    // get array of responses data to be passed in for IDB cache
-    const combinedProcessedJsonData = [].concat(...Object.values(combinedProcessedJson));
+    // get array of ALL data to be passed in for IDB cache
+    // (not just only response data, but including cached data
+    // since it is a bit tricky to pass in startDate and endDate later on for putTickerData
+    // because the response comes with multiple dateGaps
+    // and will need to do a lot processing to put the ticker data based on
+    // their correct startDate and endDate)
+    const tikerJsonData = [].concat(...Object.values(tickerData));
 
     yield [
         // send put request with new data
@@ -118,7 +123,7 @@ export function* selectedDataChanged(action) {
             dateRange
         )),
         // put the processed Json to IDB
-        call(quandlIDB.putTickerData, combinedProcessedJsonData, startDate, endDate)
+        call(quandlIDB.putTickerData, tikerJsonData, startDate, endDate)
     ];
 }
 

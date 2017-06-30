@@ -1,0 +1,35 @@
+@import '../sass/core';
+
+.chartTypeContainer {
+    @extend %shadow;
+    border-bottom: 3px solid $primaryColour;
+    background: #fff;
+    width: 40%;
+    display: inline-block;
+
+    :global {
+        .VirtualizedSelectFocusedOption {
+            background-color: $secondaryColour;
+            color: #fff;
+        }
+
+        .Select-control {
+            height: 100%;
+            border: 0;
+            border-radius: 0;
+            margin-left: auto;
+            
+            .Select-placeholder,
+            .Select-input,
+            .Select-value {
+                line-height: 40px !important;
+                padding: 0 1rem;
+
+                > input {
+                    padding: 0;
+                    line-height: 40px;
+                }
+            }
+        }
+    }
+}

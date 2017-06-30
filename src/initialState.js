@@ -1,8 +1,9 @@
 import moment from 'moment';
+import { CHART_TYPES } from './components/ChartType'
 
 export const initialSelectedDate = {
-    startDate: moment().subtract(3, "weeks"),
-    endDate: moment()
+    startDate: moment().startOf('day').subtract(1, "week"),
+    endDate: moment().startOf('day')
 };
 
 const isLocal = location.hostname === "localhost" ||
@@ -13,6 +14,7 @@ const serverHost = isLocal ?
     "http://localhost:5000" : "https://stock-app-server.herokuapp.com/";
 
 const initialState = {
+    chartType: CHART_TYPES.CANDLESTICK,
     selectedTickers: [],
     selectedDate: initialSelectedDate,
     shownTickers: [],
